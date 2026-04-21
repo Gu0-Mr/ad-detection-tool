@@ -8,6 +8,7 @@ object Constants {
     // 广播 Action
     const val ACTION_AD_DETECTED = "com.accessibility.adx.ACTION_AD_DETECTED"
     const val ACTION_AD_COUNTDOWN = "com.accessibility.adx.ACTION_AD_COUNTDOWN"
+    const val ACTION_AD_STATE_CHANGED = "com.accessibility.adx.ACTION_AD_STATE_CHANGED"
     const val ACTION_DETECTION_STATUS_CHANGED = "com.accessibility.adx.ACTION_DETECTION_STATUS_CHANGED"
     const val ACTION_START = "com.accessibility.adx.ACTION_START_SERVICE"
     const val ACTION_STOP = "com.accessibility.adx.ACTION_STOP_SERVICE"

@@ -47,7 +47,7 @@ jobs:
         run: ./gradlew assembleDebug --no-daemon --stacktrace
         
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: debug-apk
           path: app/build/outputs/apk/debug/*.apk
@@ -77,9 +77,10 @@ jobs:
         run: ./gradlew lint --no-daemon || echo "Lint completed with warnings"
         
       - name: Upload lint reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: lint-reports
           path: app/build/reports/lint-results-*.html
           retention-days: 7
+

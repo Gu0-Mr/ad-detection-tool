@@ -8,5 +8,4 @@
     android:notificationTimeout="100"
     android:settingsActivity="com.accessibility.adx.ui.MainActivity"
     android:canPerformGestures="false"
-    android:canTakeScreenshot="false"
-    android:isAutofillCompatibilityEnabled="false" />
+    android:canTakeScreenshot="false" />

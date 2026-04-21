@@ -99,7 +99,7 @@ object PermissionUtils {
             } else {
                 @Suppress("DEPRECATION")
                 appOps.checkOpNoThrow(
-                    OP_VIBRATE,
+                    OPSTR_VIBRATE,
                     Process.myUid(),
                     context.packageName
                 )

@@ -30,6 +30,7 @@ import com.accessibility.adx.service.DetectionService
 import com.accessibility.adx.service.FloatWindowService
 import com.accessibility.adx.Constants.ACTION_AD_DETECTED
 import com.accessibility.adx.Constants.ACTION_DETECTION_STATUS_CHANGED
+import com.accessibility.adx.Constants.ACTION_STOP
 import com.accessibility.adx.Constants.EXTRA_DETECTION_COUNT
 import com.accessibility.adx.Constants.EXTRA_TOTAL_COUNT
 
@@ -286,7 +287,7 @@ class MainActivity : AppCompatActivity() {
     private fun stopServices() {
         // 停止检测服务
         val detectionIntent = Intent(this, DetectionService::class.java).apply {
-            action = DetectionService.ACTION_STOP
+            action = Constants.ACTION_STOP
         }
         startService(detectionIntent)
 

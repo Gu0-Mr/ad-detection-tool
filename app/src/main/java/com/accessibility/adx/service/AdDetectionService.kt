@@ -107,10 +107,10 @@ class AdDetectionService : AccessibilityService() {
         isRunning = true
         
         // 配置服务信息
-        serviceInfo = serviceInfo.apply {
-            notificationTimeout = 100
-            accessibilityEventTypes = EVENT_TYPES
-        }
+        val info = serviceInfo
+        info.notificationTimeout = 100
+        info.eventTypes = EVENT_TYPES
+        serviceInfo = info
         
         prefs.isAccessibilityEnabled = true
     }
@@ -166,11 +166,6 @@ class AdDetectionService : AccessibilityService() {
         prefs.isAccessibilityEnabled = false
         adDetector.setCallback(null)
         soundManager.release()
-    }
-
-    override fun onConfigurationChanged(newConfig: android.content.res.Configuration?) {
-        super.onConfigurationChanged(newConfig)
-        updateScreenSize()
     }
 
     /**

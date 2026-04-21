@@ -414,8 +414,8 @@ private var PreferencesManager.x: Int
         val field = javaClass.getDeclaredField("prefs")
         field.isAccessible = true
         val prefs = field.get(this) as android.content.SharedPreferences
-        prefs.getInt("float_x", DEFAULT_X)
-    } catch (e: Exception) { DEFAULT_X }
+        prefs.getInt("float_x", FloatWindowService.DEFAULT_X)
+    } catch (e: Exception) { FloatWindowService.DEFAULT_X }
     set(value) {
         try {
             val field = javaClass.getDeclaredField("prefs")
@@ -430,8 +430,8 @@ private var PreferencesManager.y: Int
         val field = javaClass.getDeclaredField("prefs")
         field.isAccessible = true
         val prefs = field.get(this) as android.content.SharedPreferences
-        prefs.getInt("float_y", DEFAULT_Y)
-    } catch (e: Exception) { DEFAULT_Y }
+        prefs.getInt("float_y", FloatWindowService.DEFAULT_Y)
+    } catch (e: Exception) { FloatWindowService.DEFAULT_Y }
     set(value) {
         try {
             val field = javaClass.getDeclaredField("prefs")

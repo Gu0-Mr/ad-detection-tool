@@ -6,7 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
-import android.os.ProcessManager
+import android.os.Process
 import android.provider.Settings
 import android.view.accessibility.AccessibilityManager
 import androidx.core.content.ContextCompat
@@ -90,14 +90,14 @@ object PermissionUtils {
         val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             appOps.unsafeCheckOpNoThrow(
                 AppOpsManager.OPSTR_VIBRATE,
-                ProcessManager.myUid(),
+                Process.myUid(),
                 context.packageName
             )
         } else {
             @Suppress("DEPRECATION")
             appOps.checkOpNoThrow(
                 AppOpsManager.OPSTR_VIBRATE,
-                ProcessManager.myUid(),
+                Process.myUid(),
                 context.packageName
             )
         }

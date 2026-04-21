@@ -83,4 +83,3 @@ jobs:
           name: lint-reports
           path: app/build/reports/lint-results-*.html
           retention-days: 7
-

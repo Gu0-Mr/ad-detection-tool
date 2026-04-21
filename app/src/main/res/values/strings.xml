@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">广告检测工具</string>
+    <string name="app_name_full">广告检测工具 Pro</string>
+
+    <!-- AccessibilityService描述 -->
+    <string name="accessibility_service_description">广告检测工具可帮助您检测和关闭应用中的广告弹窗。\n\n主要功能：\n• 检测广告关闭按钮\n• 震动提醒\n• 声音提示\n• 悬浮窗显示状态\n\n使用前请确保已开启无障碍服务权限。</string>
+
+    <!-- 主界面标题 -->
+    <string name="title_main">广告检测工具</string>
+    <string name="title_settings">设置</string>
+    <string name="title_statistics">检测统计</string>
+
+    <!-- 开关状态 -->
+    <string name="status_enabled">已开启</string>
+    <string name="status_disabled">已关闭</string>
+    <string name="status_running">检测中</string>
+    <string name="status_stopped">已停止</string>
+
+    <!-- 主界面功能 -->
+    <string name="func_accessibility">无障碍服务</string>
+    <string name="func_accessibility_desc">监听并检测广告关闭按钮</string>
+    <string name="func_float_window">悬浮窗</string>
+    <string name="func_float_window_desc">显示检测状态和计数</string>
+    <string name="func_vibration">震动提醒</string>
+    <string name="func_vibration_desc">检测到广告时震动</string>
+    <string name="func_sound">声音提示</string>
+    <string name="func_sound_desc">检测到广告时播放提示音</string>
+    <string name="func_auto_close">自动关闭</string>
+    <string name="func_auto_close_desc">自动点击广告关闭按钮</string>
+
+    <!-- 设置项 -->
+    <string name="setting_vibration_intensity">震动强度</string>
+    <string name="setting_vibration_duration">震动时长</string>
+    <string name="setting_sound_volume">提示音量</string>
+    <string name="setting_detection_sensitivity">检测灵敏度</string>
+    <string name="setting_detection_area">检测区域</string>
+
+    <!-- 统计信息 -->
+    <string name="stat_total_detected">总检测数</string>
+    <string name="stat_today_detected">今日检测</string>
+    <string name="stat_this_week">本周检测</string>
+    <string name="stat_top_apps">高频应用</string>
+
+    <!-- 按钮文字 -->
+    <string name="btn_start">开始检测</string>
+    <string name="btn_stop">停止检测</string>
+    <string name="btn_settings">设置</string>
+    <string name="btn_clear_stats">清除统计</string>
+    <string name="btn_grant_permission">授予权限</string>
+    <string name="btn_open_settings">打开设置</string>
+
+    <!-- 通知 -->
+    <string name="notification_channel_name">检测服务</string>
+    <string name="notification_channel_desc">广告检测前台服务通知</string>
+    <string name="notification_title">广告检测工具运行中</string>
+    <string name="notification_content">正在监听广告关闭按钮…</string>
+
+    <!-- 悬浮窗 -->
+    <string name="float_detecting">检测中</string>
+    <string name="float_count">已检测: %d</string>
+    <string name="float_tap_to_open">点击打开</string>
+
+    <!-- 提示信息 -->
+    <string name="tip_grant_accessibility">请先开启无障碍服务权限</string>
+    <string name="tip_grant_overlay">请先授予悬浮窗权限</string>
+    <string name="tip_service_started">检测服务已启动</string>
+    <string name="tip_service_stopped">检测服务已停止</string>
+    <string name="tip_ad_detected">检测到广告！</string>
+    <string name="tip_stats_cleared">统计数据已清除</string>
+
+    <!-- 对话框 -->
+    <string name="dialog_confirm">确认</string>
+    <string name="dialog_cancel">取消</string>
+    <string name="dialog_clear_title">清除统计</string>
+    <string name="dialog_clear_message">确定要清除所有检测统计数据吗？</string>
+
+    <!-- 关于 -->
+    <string name="about_version">版本 %s</string>
+    <string name="about_description">一款智能检测和关闭广告弹窗的工具</string>
+</resources>

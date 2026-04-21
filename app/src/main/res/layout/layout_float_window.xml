@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_float_window"
+    android:gravity="center_vertical"
+    android:minWidth="180dp"
+    android:orientation="horizontal"
+    android:padding="12dp">
+
+    <!-- 检测状态指示 -->
+    <View
+        android:id="@+id/viewIndicator"
+        android:layout_width="10dp"
+        android:layout_height="10dp"
+        android:background="@drawable/bg_circle_button" />
+
+    <!-- 信息区域 -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tvFloatStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/float_detecting"
+            android:textColor="@color/float_text"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvFloatCount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/float_count"
+            android:textColor="@color/float_text"
+            android:textSize="11sp" />
+
+    </LinearLayout>
+
+    <!-- 快捷控制按钮 -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:orientation="horizontal">
+
+        <!-- 震动开关 -->
+        <ImageButton
+            android:id="@+id/btnFloatVibration"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/func_vibration"
+            android:padding="4dp"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_vibration"
+            app:tint="@color/float_text" />
+
+        <!-- 声音开关 -->
+        <ImageButton
+            android:id="@+id/btnFloatSound"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginStart="4dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/func_sound"
+            android:padding="4dp"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_sound"
+            app:tint="@color/float_text" />
+
+        <!-- 关闭按钮 -->
+        <ImageButton
+            android:id="@+id/btnFloatClose"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginStart="4dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/dialog_cancel"
+            android:padding="4dp"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_close"
+            app:tint="@color/float_text" />
+
+    </LinearLayout>
+
+</LinearLayout>

@@ -26,7 +26,8 @@ import com.accessibility.adx.PermissionUtils
 import com.accessibility.adx.R
 import com.accessibility.adx.databinding.ActivityMainBinding
 import com.accessibility.adx.service.AdDetectionService
-import com.accessibility.adx.service.DetectionService.ACTION_AD_DETECTED
+import com.accessibility.adx.service.AdDetectionService.Companion.ACTION_AD_DETECTED
+import com.accessibility.adx.service.DetectionService
 import com.accessibility.adx.service.DetectionService.ACTION_DETECTION_STATUS_CHANGED
 import com.accessibility.adx.service.FloatWindowService
 

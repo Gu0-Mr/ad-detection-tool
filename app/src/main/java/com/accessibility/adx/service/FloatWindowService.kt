@@ -38,9 +38,9 @@ class FloatWindowService : Service() {
         // 通知ID
         private const val NOTIFICATION_ID = 1002
         
-        // 默认位置
-        private const val DEFAULT_X = 200
-        private const val DEFAULT_Y = 300
+        // 默认位置（internal，允许扩展属性访问）
+        internal const val DEFAULT_X = 200
+        internal const val DEFAULT_Y = 300
         
         // 拖动相关
         private const val HANDLE_MODE_NONE = 0

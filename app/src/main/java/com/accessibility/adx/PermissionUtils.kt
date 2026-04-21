@@ -10,6 +10,8 @@ import android.os.Process
 import android.provider.Settings
 import android.view.accessibility.AccessibilityManager
 import androidx.core.content.ContextCompat
+import com.accessibility.adx.AppOpsConstants.OPSTR_VIBRATE
+import com.accessibility.adx.AppOpsConstants.OP_VIBRATE
 
 /**
  * 权限检查工具类
@@ -90,14 +92,14 @@ object PermissionUtils {
             val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
             val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 appOps.unsafeCheckOpNoThrow(
-                    AppOpsManager.OPSTR_VIBRATE,
+                    OPSTR_VIBRATE,
                     Process.myUid(),
                     context.packageName
                 )
             } else {
                 @Suppress("DEPRECATION")
                 appOps.checkOpNoThrow(
-                    AppOpsManager.OP_VIBRATE,
+                    OP_VIBRATE,
                     Process.myUid(),
                     context.packageName
                 )

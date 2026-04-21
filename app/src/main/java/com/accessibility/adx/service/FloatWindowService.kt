@@ -25,6 +25,8 @@ import com.accessibility.adx.PreferencesManager
 import com.accessibility.adx.R
 import com.accessibility.adx.ui.MainActivity
 import com.accessibility.adx.util.NotificationHelper
+import com.accessibility.adx.Constants.ACTION_AD_DETECTED
+import com.accessibility.adx.Constants.ACTION_DETECTION_STATUS_CHANGED
 
 /**
  * 悬浮窗服务

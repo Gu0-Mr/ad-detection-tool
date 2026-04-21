@@ -14,6 +14,9 @@ import com.accessibility.adx.PreferencesManager
 import com.accessibility.adx.R
 import com.accessibility.adx.ui.MainActivity
 import com.accessibility.adx.util.NotificationHelper
+import com.accessibility.adx.Constants.ACTION_START
+import com.accessibility.adx.Constants.ACTION_STOP
+import com.accessibility.adx.Constants.ACTION_DETECTION_STATUS_CHANGED
 
 /**
  * 前台检测服务
@@ -23,9 +26,6 @@ class DetectionService : Service() {
 
     companion object {
         private const val TAG = "DetectionService"
-        
-        const val ACTION_START = "com.accessibility.adx.ACTION_START_SERVICE"
-        const val ACTION_STOP = "com.accessibility.adx.ACTION_STOP_SERVICE"
         
         @Volatile
         var isRunning = false
@@ -158,4 +158,3 @@ class DetectionService : Service() {
 }
 
 // 状态广播Action
-const val ACTION_DETECTION_STATUS_CHANGED = "com.accessibility.adx.ACTION_DETECTION_STATUS_CHANGED"

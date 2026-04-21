@@ -6,6 +6,9 @@ import android.util.DisplayMetrics
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import com.accessibility.adx.Constants.ACTION_AD_DETECTED
+import com.accessibility.adx.Constants.EXTRA_DETECTION_COUNT
+import com.accessibility.adx.Constants.EXTRA_TOTAL_COUNT
 import com.accessibility.adx.detector.AdDetector
 import com.accessibility.adx.util.SoundManager
 import com.accessibility.adx.util.VibrationManager
@@ -28,11 +31,6 @@ class AdDetectionService : AccessibilityService() {
         private const val EVENT_TYPES = AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED or
                 AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED or
                 AccessibilityEvent.TYPE_VIEW_CLICKED
-        
-        // 广播Action
-        const val ACTION_AD_DETECTED = "com.accessibility.adx.ACTION_AD_DETECTED"
-        const val EXTRA_DETECTION_COUNT = "detection_count"
-        const val EXTRA_TOTAL_COUNT = "total_count"
     }
 
     // 偏好设置

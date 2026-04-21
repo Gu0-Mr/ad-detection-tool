@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 主题色 -->
+    <color name="primary">#6200EE</color>
+    <color name="primary_dark">#3700B3</color>
+    <color name="primary_variant">#3700B3</color>
+    <color name="secondary">#03DAC6</color>
+    <color name="secondary_variant">#018786</color>
+
+    <!-- 背景色 -->
+    <color name="background">#FFFFFF</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="card_background">#F5F5F5</color>
+
+    <!-- 文字颜色 -->
+    <color name="text_primary">#212121</color>
+    <color name="text_secondary">#757575</color>
+    <color name="text_hint">#BDBDBD</color>
+    <color name="text_on_primary">#FFFFFF</color>
+
+    <!-- 状态颜色 -->
+    <color name="status_enabled">#4CAF50</color>
+    <color name="status_disabled">#9E9E9E</color>
+    <color name="status_warning">#FF9800</color>
+    <color name="status_error">#F44336</color>
+
+    <!-- 功能颜色 -->
+    <color name="color_vibration">#2196F3</color>
+    <color name="color_sound">#9C27B0</color>
+    <color name="color_float">#FF5722</color>
+    <color name="color_accessibility">#00BCD4</color>
+
+    <!-- 悬浮窗颜色 -->
+    <color name="float_background">#E6414141</color>
+    <color name="float_text">#FFFFFF</color>
+    <color name="float_button">#4CAF50</color>
+    <color name="float_button_stop">#F44336</color>
+
+    <!-- 分割线 -->
+    <color name="divider">#E0E0E0</color>
+
+    <!-- 开关颜色 -->
+    <color name="switch_track_on">#806200EE</color>
+    <color name="switch_track_off">#4D9E9E9E</color>
+    <color name="switch_thumb_on">#6200EE</color>
+    <color name="switch_thumb_off">#BDBDBD</color>
+</resources>

@@ -28,6 +28,11 @@ class AdDetectionService : AccessibilityService() {
         private const val EVENT_TYPES = AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED or
                 AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED or
                 AccessibilityEvent.TYPE_VIEW_CLICKED
+        
+        // 广播Action
+        const val ACTION_AD_DETECTED = "com.accessibility.adx.ACTION_AD_DETECTED"
+        const val EXTRA_DETECTION_COUNT = "detection_count"
+        const val EXTRA_TOTAL_COUNT = "total_count"
     }
 
     // 偏好设置
@@ -188,8 +193,3 @@ class AdDetectionService : AccessibilityService() {
         soundManager.updateVolume()
     }
 }
-
-// 广播Action
-const val ACTION_AD_DETECTED = "com.accessibility.adx.ACTION_AD_DETECTED"
-const val EXTRA_DETECTION_COUNT = "detection_count"
-const val EXTRA_TOTAL_COUNT = "total_count"

@@ -15,7 +15,10 @@
     <!-- 震动权限 -->
     <uses-permission android:name="android.permission.VIBRATE" />
 
-    <!-- 开机自启权限（可选） -->
+    <!-- 唤醒锁权限 -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- 开机自启权限 -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <!-- 振动器功能 -->
@@ -51,6 +54,12 @@
             android:exported="false"
             android:theme="@style/Theme.AdXDetector" />
 
+        <!-- 适配名单界面 -->
+        <activity
+            android:name=".ui.SupportedAppsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.AdXDetector" />
+
         <!-- 前台服务 -->
         <service
             android:name=".service.DetectionService"
@@ -79,9 +88,13 @@
             <meta-data
                 android:name="android.accessibilityservice"
                 android:resource="@xml/accessibility_service_config" />
+            <!-- 应用作者 -->
+            <meta-data
+                android:name="author"
+                android:value="古封" />
         </service>
 
-        <!-- 开机广播接收器（可选） -->
+        <!-- 开机广播接收器 -->
         <receiver
             android:name=".receiver.BootReceiver"
             android:enabled="true"

@@ -6,53 +6,36 @@ import android.view.accessibility.AccessibilityNodeInfo
 import com.accessibility.adx.PreferencesManager
 
 /**
- * 全自动广告点击器
- * 从检测+提醒升级为自动执行完整广告领取流程
+ * "领时长"全自动循环广告点击器
+ * 核心功能：自动检测"领时长"按钮 → 进入广告 → 完成领取 → 返回继续检测
+ * 作者：古封
  */
 class AdDetectorSimple(private val prefs: PreferencesManager) {
 
     companion object {
         private const val TAG = "AdDetectorSimple"
         
-        // 检测区域：屏幕右上角
-        private const val DETECTION_RIGHT_RATIO = 0.85f  // 从右侧85%开始
-        private const val DETECTION_TOP_RATIO = 0.25f   // 到顶部25%结束
+        // ========== 检测区域配置 ==========
+        private const val DETECTION_RIGHT_RATIO = 0.85f
+        private const val DETECTION_TOP_RATIO = 0.35f
         
-        // 检测间隔：500ms，更快响应
-        private const val DETECTION_INTERVAL = 500L
+        // ========== 时间配置（毫秒）==========
+        private const val DETECTION_INTERVAL = 500L      // 检测间隔：500ms快速响应
+        private const val CLICK_COOLDOWN = 180000L      // 同一按钮冷却：3分钟
+        private const val AD_TIMEOUT = 120000L          // 单个广告流程超时：120秒
+        private const val FAIL_PAUSE_TIME = 600000L     // 连续失败暂停：10分钟
+        private const val MAX_LOOP_COUNT = 20            // 最大循环次数
+        private const val MAX_FAIL_COUNT = 5             // 连续失败上限
         
-        // 循环次数限制
-        private const val MAX_LOOP_COUNT = 10
-        
-        // 点击间隔（防止重复点击）
-        private const val CLICK_COOLDOWN = 3000L
-        
-        // ========== 状态2关键词（倒计时结束，可直接点击）==========
-        private val REWARD_READY_KEYWORDS = listOf(
-            "可领取奖励",
-            "点击领取",
-            "立即领取",
-            "领取奖励"
-        )
-        
-        // ========== 关闭按钮关键词 ==========
-        private val CLOSE_BUTTON_KEYWORDS = listOf(
-            "×", "X", "✕", "✖",
-            "关闭", "close", "close_btn", "iv_close", "btn_close"
-        )
-        
-        // ========== 状态1关键词（倒计时进行中）==========
-        private val COUNTDOWN_KEYWORDS = listOf(
-            "秒后可领取奖励",
-            "秒后可关闭",
-            "秒后可跳过",
-            "秒后关闭",
-            "秒后可领"
-        )
-        
-        // 倒计时数字关键词
-        private val COUNTDOWN_NUMBER_KEYWORDS = listOf(
-            "1秒", "2秒", "3秒", "4秒", "5秒", "6秒", "7秒", "8秒", "9秒"
+        // ========== "领时长"关键词 ==========
+        private val CLAIM_TIME_KEYWORDS = listOf(
+            "领时长",
+            "看广告领时长",
+            "时长奖励",
+            "领取时长",
+            "得时长",
+            "时长翻倍",
+            "看视频领时长"
         )
         
         // ========== 领取成功关键词 ==========
@@ -61,106 +44,170 @@ class AdDetectorSimple(private val prefs: PreferencesManager) {
             "已领取",
             "恭喜获得",
             "奖励已到账",
-            "奖励领取成功"
+            "奖励领取成功",
+            "时长已到账",
+            "领取完成"
         )
         
-        // ========== 弹窗关键词（最高优先级）==========
-        private val POPUP_CONTINUE_KEYWORDS = listOf(
-            "继续观看",
-            "继续领取",
-            "再领一次",
-            "看广告",
-            "继续看广告",
+        // ========== 领取按钮关键词 ==========
+        private val REWARD_READY_KEYWORDS = listOf(
+            "可领取奖励",
             "点击领取",
             "立即领取",
-            "坚持退出",
-            "取消",
-            "退出"
+            "领取奖励",
+            "立即领取",
+            "看视频领取"
         )
         
-        private val POPUP_REWARD_KEYWORDS = listOf(
-            "领取奖励",
-            "继续领取",
-            "再领一次",
-            "看广告领奖励"
+        // ========== 关闭按钮关键词 ==========
+        private val CLOSE_BUTTON_KEYWORDS = listOf(
+            "×", "X", "✕", "✖",
+            "关闭", "close", "skip", "跳过", "skip_ad"
+        )
+        
+        // ========== 倒计时关键词 ==========
+        private val COUNTDOWN_KEYWORDS = listOf(
+            "秒后可领取", "秒后可关闭", "秒后可跳过", "秒后关闭"
+        )
+        
+        private val COUNTDOWN_NUMBER_KEYWORDS = listOf(
+            "1秒", "2秒", "3秒", "4秒", "5秒", "6秒", "7秒", "8秒", "9秒"
+        )
+        
+        // ========== 弹窗关键词 ==========
+        private val POPUP_CONTINUE_KEYWORDS = listOf(
+            "继续观看", "继续领取", "再领一次", "看广告", "继续看广告"
+        )
+        
+        private val POPUP_EXIT_KEYWORDS = listOf(
+            "坚持退出", "残忍离开", "确认退出"
         )
     }
 
-    // 当前状态
+    // ========== 状态枚举 ==========
     enum class AdState {
-        IDLE,                    // 空闲状态，监听中
-        COUNTDOWN,               // 倒计时进行中
-        REWARD_READY,            // 可领取奖励
-        CLICKING_REWARD,         // 正在点击领取
-        REWARD_SUCCESS,          // 领取成功
-        CLOSING_AD,              // 正在关闭广告
-        POPUP_DETECTED,          // 检测到弹窗
-        TASK_COMPLETE            // 任务完成
+        IDLE,                    // 空闲：检测"领时长"
+        DETECTING_CLAIM,         // 检测领时长按钮
+        ENTERING_AD,             // 进入广告中
+        AD_COUNTDOWN,            // 广告倒计时中
+        AD_REWARD_READY,         // 广告可领取
+        AD_CLICKING,             // 点击领取中
+        AD_SUCCESS,              // 领取成功
+        AD_CLOSING,              // 关闭广告中
+        POPUP_HANDLING,          // 处理弹窗
+        TASK_COMPLETE,           // 任务完成
+        PAUSED                   // 暂停（失败过多）
     }
 
-    // 检测结果数据类
+    // ========== 动作枚举 ==========
+    enum class Action {
+        NONE,
+        CLICK_CLAIM_TIME,       // 点击"领时长"
+        CLICK_REWARD,           // 点击领取
+        CLICK_CLOSE,            // 点击关闭
+        CLICK_POPUP,            // 点击弹窗
+        WAIT,                   // 等待
+        COMPLETE                // 完成
+    }
+
+    // ========== 检测结果 ==========
     data class DetectionResult(
         val state: AdState,
         val action: Action,
         val matchedText: String,
         val targetNode: AccessibilityNodeInfo? = null
     )
-    
-    // 操作动作
-    enum class Action {
-        NONE,           // 无需操作
-        CLICK_REWARD,   // 点击领取奖励按钮
-        CLICK_CLOSE,    // 点击关闭按钮
-        CLICK_POPUP,    // 点击弹窗选项
-        WAIT,           // 等待
-        COMPLETE        // 任务完成
-    }
 
+    // ========== 回调接口 ==========
     interface DetectionCallback {
-        /**
-         * 广告状态更新回调
-         * @param state 当前状态
-         * @param action 需要执行的动作
-         * @param matchedText 匹配到的文字
-         */
         fun onStateChanged(state: AdState, action: Action, matchedText: String)
+        fun onLog(log: String)
     }
 
     private var callback: DetectionCallback? = null
     
-    // 状态管理
+    // ========== 状态变量 ==========
     private var currentState: AdState = AdState.IDLE
     private var loopCount = 0
+    private var failCount = 0
     private var lastClickTime = 0L
+    private var lastClaimClickTime = 0L
+    private var adStartTime = 0L
     private var lastMatchedText = ""
     private var lastDetectionTime = 0L
+    private var lastClaimButtonText = ""  // 记录上次点击的领时长按钮文字
     
-    // 防止重复点击的标志
-    private var hasClickedReward = false
-    private var hasClosedAd = false
+    // 当前APP是否在适配名单中
+    private var isSupportedApp = true
+    
+    // 屏幕尺寸缓存
+    private var cachedScreenWidth = 0
+    private var cachedScreenHeight = 0
 
     fun setCallback(callback: DetectionCallback?) {
         this.callback = callback
     }
 
     fun reset() {
+        val oldState = currentState
         currentState = AdState.IDLE
         loopCount = 0
-        hasClickedReward = false
-        hasClosedAd = false
         lastMatchedText = ""
-        lastClickTime = 0L
-        lastDetectionTime = 0L
-        Log.d(TAG, "【状态重置】返回空闲监听状态")
+        log("【状态重置】$oldState → IDLE")
     }
 
     /**
-     * 执行广告自动点击检测
-     * 返回需要执行的动作
+     * 暂停服务（失败过多时）
+     */
+    fun pause() {
+        currentState = AdState.PAUSED
+        log("【服务暂停】连续失败$failCount次，暂停${FAIL_PAUSE_TIME/1000/60}分钟")
+        callback?.onStateChanged(AdState.PAUSED, Action.NONE, "暂停服务")
+        
+        // 延迟恢复
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            if (currentState == AdState.PAUSED) {
+                failCount = 0
+                currentState = AdState.IDLE
+                log("【服务恢复】可以继续工作")
+                callback?.onStateChanged(AdState.IDLE, Action.NONE, "服务恢复")
+            }
+        }, FAIL_PAUSE_TIME)
+    }
+
+    /**
+     * 更新屏幕尺寸缓存
+     */
+    fun updateScreenSize(width: Int, height: Int) {
+        cachedScreenWidth = width
+        cachedScreenHeight = height
+    }
+    
+    /**
+     * 设置当前APP是否在适配名单中
+     */
+    fun setSupportedApp(isSupported: Boolean) {
+        isSupportedApp = isSupported
+        log("【适配状态】${if (isSupported) "已适配应用" else "非适配应用"}")
+    }
+    
+    /**
+     * 检查当前APP是否在适配名单中
+     */
+    fun isCurrentAppSupported(): Boolean = isSupportedApp
+
+    /**
+     * 主检测入口
      */
     fun detect(rootNode: AccessibilityNodeInfo?, screenWidth: Int, screenHeight: Int): DetectionResult? {
         if (rootNode == null) return null
         if (callback == null) return null
+
+        // 更新屏幕尺寸缓存
+        if (screenWidth > 0 && screenHeight > 0) {
+            cachedScreenWidth = screenWidth
+            cachedScreenHeight = screenHeight
+        }
 
         // 时间控制
         val currentTime = System.currentTimeMillis()
@@ -169,72 +216,82 @@ class AdDetectorSimple(private val prefs: PreferencesManager) {
         }
         lastDetectionTime = currentTime
 
-        // 计算检测区域：右上角
-        val rightStart = (screenWidth * DETECTION_RIGHT_RATIO).toInt()
-        val topEnd = (screenHeight * DETECTION_TOP_RATIO).toInt()
-        val fullScreen = Rect(0, 0, screenWidth, screenHeight)
-        val detectionArea = Rect(rightStart, 0, screenWidth, topEnd)
-        
-        Log.d(TAG, "【状态】$currentState | 循环次数: $loopCount")
+        // 计算检测区域
+        val rightStart = (cachedScreenWidth * DETECTION_RIGHT_RATIO).toInt()
+        val topEnd = (cachedScreenHeight * DETECTION_TOP_RATIO).toInt()
+        val fullScreen = Rect(0, 0, cachedScreenWidth, cachedScreenHeight)
+        val cornerArea = Rect(rightStart, 0, cachedScreenWidth, topEnd)
 
-        // ========== 优先级1：弹窗检测（最高优先级）==========
-        val popupResult = detectPopup(rootNode, fullScreen)
-        if (popupResult != null) {
-            currentState = AdState.POPUP_DETECTED
-            return popupResult
+        // 日志输出当前状态（每10次输出一次）
+        if (loopCount % 10 == 0) {
+            log("【状态:${currentState}】循环:$loopCount 失败:$failCount")
+        }
+
+        // ========== 超时检测 ==========
+        if (adStartTime > 0 && (currentTime - adStartTime) > AD_TIMEOUT) {
+            log("【超时】广告流程超过${AD_TIMEOUT/1000}秒，强制重置")
+            failCount++
+            loopCount = 0
+            adStartTime = 0
+            currentState = AdState.IDLE
+            if (failCount >= MAX_FAIL_COUNT) {
+                pause()
+            }
+            return null
+        }
+
+        // ========== 优先级1：弹窗处理 ==========
+        if (currentState != AdState.PAUSED) {
+            val popupResult = detectPopup(rootNode, fullScreen)
+            if (popupResult != null) return popupResult
         }
 
         // ========== 优先级2：领取成功 + 关闭 ==========
-        val successResult = detectRewardSuccessAndClose(rootNode, detectionArea)
-        if (successResult != null) {
-            currentState = AdState.REWARD_SUCCESS
-            return successResult
+        if (currentState != AdState.IDLE && currentState != AdState.DETECTING_CLAIM && currentState != AdState.PAUSED) {
+            val successResult = detectAndCloseReward(rootNode, cornerArea)
+            if (successResult != null) return successResult
         }
 
-        // ========== 优先级3：领取按钮点击 ==========
-        if (currentState == AdState.IDLE || currentState == AdState.COUNTDOWN) {
-            val rewardResult = detectRewardButton(rootNode, detectionArea)
-            if (rewardResult != null) {
-                currentState = AdState.REWARD_READY
-                return rewardResult
-            }
+        // ========== 优先级3：领取按钮 ==========
+        if (currentState == AdState.AD_COUNTDOWN || currentState == AdState.AD_REWARD_READY) {
+            val rewardResult = detectRewardButton(rootNode, cornerArea)
+            if (rewardResult != null) return rewardResult
         }
 
-        // ========== 优先级4：倒计时检测（最低优先级）==========
-        val countdownResult = detectCountdown(rootNode, detectionArea)
-        if (countdownResult != null) {
-            currentState = AdState.COUNTDOWN
-            return countdownResult
+        // ========== 优先级4：倒计时 ==========
+        if (currentState == AdState.ENTERING_AD || currentState == AdState.AD_COUNTDOWN) {
+            val countdownResult = detectCountdown(rootNode, cornerArea)
+            if (countdownResult != null) return countdownResult
         }
 
-        // 无检测结果，保持当前状态或返回IDLE
-        if (currentState == AdState.COUNTDOWN) {
-            // 倒计时期间没有检测到任何东西，可能是广告已关闭
-            Log.d(TAG, "【倒计时期间无检测】广告可能已关闭")
+        // ========== 优先级5：检测"领时长"按钮（仅在空闲状态）==========
+        if (currentState == AdState.IDLE) {
+            val claimResult = detectClaimTimeButton(rootNode, fullScreen)
+            if (claimResult != null) return claimResult
         }
-        
+
         return null
     }
 
     /**
-     * 执行点击操作
+     * 执行点击
      */
     fun performClick(node: AccessibilityNodeInfo?): Boolean {
         if (node == null) return false
         
         val currentTime = System.currentTimeMillis()
-        if (currentTime - lastClickTime < CLICK_COOLDOWN) {
-            Log.d(TAG, "【点击冷却中】跳过重复点击")
+        if (currentTime - lastClickTime < 1000) { // 1秒内防抖
+            log("【点击防抖】跳过")
             return false
         }
         
         try {
             val clicked = node.performAction(AccessibilityNodeInfo.ACTION_CLICK)
             lastClickTime = currentTime
-            Log.d(TAG, "【点击成功】${node.text ?: node.contentDescription}")
+            log("【点击成功】${node.text ?: node.contentDescription}")
             return clicked
         } catch (e: Exception) {
-            Log.e(TAG, "【点击失败】${e.message}")
+            log("【点击失败】${e.message}")
             return false
         }
     }
@@ -245,104 +302,97 @@ class AdDetectorSimple(private val prefs: PreferencesManager) {
     fun updateState(newState: AdState) {
         val oldState = currentState
         currentState = newState
-        Log.d(TAG, "【状态变更】$oldState -> $newState")
         
         when (newState) {
-            AdState.CLICKING_REWARD -> {
-                hasClickedReward = true
+            AdState.DETECTING_CLAIM, AdState.ENTERING_AD -> {
+                if (oldState == AdState.IDLE) {
+                    adStartTime = System.currentTimeMillis()
+                }
+                loopCount++
+            }
+            AdState.AD_CLICKING -> {
                 loopCount++
                 if (loopCount >= MAX_LOOP_COUNT) {
-                    Log.w(TAG, "【循环次数超限】$loopCount >= $MAX_LOOP_COUNT，强制结束任务")
-                    callback?.onStateChanged(AdState.TASK_COMPLETE, Action.COMPLETE, "循环次数超限")
+                    log("【循环超限】强制结束任务")
+                    updateState(AdState.TASK_COMPLETE)
                 }
             }
-            AdState.CLOSING_AD -> {
-                hasClosedAd = true
+            AdState.AD_SUCCESS, AdState.AD_CLOSING -> {
+                failCount = 0 // 成功后重置失败计数
             }
             AdState.TASK_COMPLETE -> {
-                reset()
+                log("【任务完成】关闭广告流程")
+                loopCount = 0
+                adStartTime = 0
             }
             else -> {}
         }
+        
+        log("【状态变更】$oldState → $newState")
     }
 
-    // ========== 优先级1：弹窗检测 ==========
-    private fun detectPopup(node: AccessibilityNodeInfo, screen: Rect): DetectionResult? {
+    // ========== "领时长"按钮检测 ==========
+    private fun detectClaimTimeButton(node: AccessibilityNodeInfo, screen: Rect): DetectionResult? {
         val bounds = Rect()
         node.getBoundsInScreen(bounds)
         
-        // 跳过不在屏幕内的节点
-        if (!screen.contains(bounds)) {
-            for (i in 0 until node.childCount) {
-                val child = node.getChild(i) ?: continue
-                try {
-                    val result = detectPopup(child, screen)
-                    if (result != null) return result
-                } finally {
-                    child.recycle()
-                }
-            }
-            return null
+        if (!screen.contains(bounds) && !isWithinBounds(bounds, screen)) {
+            return scanChildren(node, screen) { child -> detectClaimTimeButton(child, screen) }
         }
         
         val text = node.text?.toString()?.trim() ?: ""
         val contentDesc = node.contentDescription?.toString()?.trim() ?: ""
+        val className = node.className?.toString()?.lowercase() ?: ""
         val fullText = "$text $contentDesc"
         
-        // 检测弹窗关键词
-        val hasPopupKeyword = POPUP_CONTINUE_KEYWORDS.any { fullText.contains(it) }
-        val hasRewardKeyword = POPUP_REWARD_KEYWORDS.any { fullText.contains(it) }
-        
-        if (hasPopupKeyword && hasRewardKeyword) {
-            Log.d(TAG, "【弹窗检测-领取】找到弹窗奖励选项: $fullText")
-            callback?.onStateChanged(AdState.POPUP_DETECTED, Action.CLICK_POPUP, fullText)
-            return DetectionResult(AdState.POPUP_DETECTED, Action.CLICK_POPUP, fullText, node)
+        // 检测"领时长"关键词
+        val matchedKeyword = CLAIM_TIME_KEYWORDS.find { 
+            text.contains(it) || contentDesc.contains(it)
         }
         
-        if (hasPopupKeyword) {
-            // 检查是否是"取消"或"退出"按钮（优先级较低）
-            if (text.contains("取消") || contentDesc.contains("取消") ||
-                text.contains("退出") || contentDesc.contains("退出")) {
-                Log.d(TAG, "【弹窗检测-退出】找到退出选项: $fullText")
-                // 不自动点击退出，让广告继续
+        if (matchedKeyword != null) {
+            // 防重复点击：同一按钮3分钟内不重复点击
+            if (matchedKeyword == lastClaimButtonText && 
+                System.currentTimeMillis() - lastClaimClickTime < CLICK_COOLDOWN) {
+                log("【领时长按钮】$matchedKeyword 冷却中，跳过")
                 return null
             }
             
-            Log.d(TAG, "【弹窗检测-其他】: $fullText")
-            callback?.onStateChanged(AdState.POPUP_DETECTED, Action.WAIT, fullText)
-            return DetectionResult(AdState.POPUP_DETECTED, Action.WAIT, fullText, node)
-        }
-        
-        // 递归检查子节点
-        for (i in 0 until node.childCount) {
-            val child = node.getChild(i) ?: continue
-            try {
-                val result = detectPopup(child, screen)
-                if (result != null) return result
-            } finally {
-                child.recycle()
+            // 确认可点击
+            if (className.contains("button") || className.contains("image") || 
+                className.contains("textview") || node.isClickable) {
+                log("【检测到领时长】$matchedKeyword")
+                lastClaimButtonText = matchedKeyword
+                lastClaimClickTime = System.currentTimeMillis()
+                
+                currentState = AdState.DETECTING_CLAIM
+                callback?.onStateChanged(AdState.DETECTING_CLAIM, Action.CLICK_CLAIM_TIME, matchedKeyword)
+                return DetectionResult(AdState.DETECTING_CLAIM, Action.CLICK_CLAIM_TIME, matchedKeyword, node)
+            }
+            
+            // 找可点击父节点
+            val parentNode = findClickableParent(node)
+            if (parentNode != null) {
+                log("【检测到领时长】$matchedKeyword (父节点)")
+                lastClaimButtonText = matchedKeyword
+                lastClaimClickTime = System.currentTimeMillis()
+                
+                currentState = AdState.DETECTING_CLAIM
+                callback?.onStateChanged(AdState.DETECTING_CLAIM, Action.CLICK_CLAIM_TIME, matchedKeyword)
+                return DetectionResult(AdState.DETECTING_CLAIM, Action.CLICK_CLAIM_TIME, matchedKeyword, parentNode)
             }
         }
         
-        return null
+        return scanChildren(node, screen) { child -> detectClaimTimeButton(child, screen) }
     }
 
-    // ========== 优先级2：领取成功 + 关闭 ==========
-    private fun detectRewardSuccessAndClose(node: AccessibilityNodeInfo, area: Rect): DetectionResult? {
+    // ========== 领取成功 + 关闭 ==========
+    private fun detectAndCloseReward(node: AccessibilityNodeInfo, area: Rect): DetectionResult? {
         val bounds = Rect()
         node.getBoundsInScreen(bounds)
         
         if (!area.contains(bounds)) {
-            for (i in 0 until node.childCount) {
-                val child = node.getChild(i) ?: continue
-                try {
-                    val result = detectRewardSuccessAndClose(child, area)
-                    if (result != null) return result
-                } finally {
-                    child.recycle()
-                }
-            }
-            return null
+            return scanChildren(node, area) { detectAndCloseReward(it, area) }
         }
         
         val text = node.text?.toString()?.trim() ?: ""
@@ -359,59 +409,42 @@ class AdDetectorSimple(private val prefs: PreferencesManager) {
         }
         
         if (hasSuccessKeyword) {
-            Log.d(TAG, "【领取成功】检测到: $fullText")
+            log("【领取成功】$fullText")
             
             // 优先找关闭按钮
-            if (hasCloseKeyword && (className.contains("button") || className.contains("image"))) {
-                Log.d(TAG, "【领取成功+关闭按钮】准备关闭广告")
-                callback?.onStateChanged(AdState.REWARD_SUCCESS, Action.CLICK_CLOSE, fullText)
-                return DetectionResult(AdState.REWARD_SUCCESS, Action.CLICK_CLOSE, fullText, node)
-            }
-            
-            // 如果找到关闭按钮但不在当前节点，递归查找
             val closeNode = findCloseButton(node, area)
             if (closeNode != null) {
-                Log.d(TAG, "【领取成功】找到关闭按钮，准备关闭")
-                callback?.onStateChanged(AdState.REWARD_SUCCESS, Action.CLICK_CLOSE, fullText)
-                return DetectionResult(AdState.REWARD_SUCCESS, Action.CLICK_CLOSE, fullText, closeNode)
+                log("【准备关闭】找到关闭按钮")
+                currentState = AdState.AD_CLOSING
+                callback?.onStateChanged(AdState.AD_CLOSING, Action.CLICK_CLOSE, fullText)
+                return DetectionResult(AdState.AD_CLOSING, Action.CLICK_CLOSE, fullText, closeNode)
             }
             
-            // 如果找不到关闭按钮，点击整个领取成功区域
-            Log.d(TAG, "【领取成功】无明确关闭按钮，点击领取成功区域")
-            callback?.onStateChanged(AdState.REWARD_SUCCESS, Action.CLICK_CLOSE, fullText)
-            return DetectionResult(AdState.REWARD_SUCCESS, Action.CLICK_CLOSE, fullText, node)
+            // 点击整个成功区域
+            log("【准备关闭】点击成功区域")
+            currentState = AdState.AD_CLOSING
+            callback?.onStateChanged(AdState.AD_CLOSING, Action.CLICK_CLOSE, fullText)
+            return DetectionResult(AdState.AD_CLOSING, Action.CLICK_CLOSE, fullText, node)
         }
         
-        // 递归检查子节点
-        for (i in 0 until node.childCount) {
-            val child = node.getChild(i) ?: continue
-            try {
-                val result = detectRewardSuccessAndClose(child, area)
-                if (result != null) return result
-            } finally {
-                child.recycle()
-            }
+        // 单独检测关闭按钮
+        if (hasCloseKeyword && (className.contains("button") || className.contains("image"))) {
+            log("【检测到关闭按钮】$fullText")
+            currentState = AdState.AD_CLOSING
+            callback?.onStateChanged(AdState.AD_CLOSING, Action.CLICK_CLOSE, fullText)
+            return DetectionResult(AdState.AD_CLOSING, Action.CLICK_CLOSE, fullText, node)
         }
         
-        return null
+        return scanChildren(node, area) { detectAndCloseReward(it, area) }
     }
 
-    // ========== 优先级3：领取按钮点击 ==========
+    // ========== 领取按钮检测 ==========
     private fun detectRewardButton(node: AccessibilityNodeInfo, area: Rect): DetectionResult? {
         val bounds = Rect()
         node.getBoundsInScreen(bounds)
         
         if (!area.contains(bounds)) {
-            for (i in 0 until node.childCount) {
-                val child = node.getChild(i) ?: continue
-                try {
-                    val result = detectRewardButton(child, area)
-                    if (result != null) return result
-                } finally {
-                    child.recycle()
-                }
-            }
-            return null
+            return scanChildren(node, area) { detectRewardButton(it, area) }
         }
         
         val text = node.text?.toString()?.trim() ?: ""
@@ -419,65 +452,38 @@ class AdDetectorSimple(private val prefs: PreferencesManager) {
         val className = node.className?.toString()?.lowercase() ?: ""
         val fullText = "$text $contentDesc"
         
-        // 检查是否包含领取奖励关键词
         val matchedKeyword = REWARD_READY_KEYWORDS.find { 
             text.contains(it) || contentDesc.contains(it)
         }
         
         if (matchedKeyword != null) {
-            // 防止重复点击
-            if (hasClickedReward) {
-                Log.d(TAG, "【领取按钮】已点击过，跳过: $matchedKeyword")
-                return null
-            }
-            
-            Log.d(TAG, "【领取按钮】检测到: $matchedKeyword")
-            
-            // 确认是按钮类型
             if (className.contains("button") || className.contains("image") || 
-                className.contains("textview") || className.contains("relativelayout")) {
-                callback?.onStateChanged(AdState.CLICKING_REWARD, Action.CLICK_REWARD, matchedKeyword)
-                return DetectionResult(AdState.CLICKING_REWARD, Action.CLICK_REWARD, matchedKeyword, node)
+                className.contains("textview") || node.isClickable) {
+                log("【可领取】$matchedKeyword")
+                currentState = AdState.AD_REWARD_READY
+                callback?.onStateChanged(AdState.AD_REWARD_READY, Action.CLICK_REWARD, matchedKeyword)
+                return DetectionResult(AdState.AD_REWARD_READY, Action.CLICK_REWARD, matchedKeyword, node)
             }
             
-            // 如果不是按钮类型，找父节点或同级的按钮
             val parentNode = findClickableParent(node)
             if (parentNode != null) {
-                callback?.onStateChanged(AdState.CLICKING_REWARD, Action.CLICK_REWARD, matchedKeyword)
-                return DetectionResult(AdState.CLICKING_REWARD, Action.CLICK_REWARD, matchedKeyword, parentNode)
+                log("【可领取】$matchedKeyword (父节点)")
+                currentState = AdState.AD_REWARD_READY
+                callback?.onStateChanged(AdState.AD_REWARD_READY, Action.CLICK_REWARD, matchedKeyword)
+                return DetectionResult(AdState.AD_REWARD_READY, Action.CLICK_REWARD, matchedKeyword, parentNode)
             }
         }
         
-        // 递归检查子节点
-        for (i in 0 until node.childCount) {
-            val child = node.getChild(i) ?: continue
-            try {
-                val result = detectRewardButton(child, area)
-                if (result != null) return result
-            } finally {
-                child.recycle()
-            }
-        }
-        
-        return null
+        return scanChildren(node, area) { detectRewardButton(it, area) }
     }
 
-    // ========== 优先级4：倒计时检测 ==========
+    // ========== 倒计时检测 ==========
     private fun detectCountdown(node: AccessibilityNodeInfo, area: Rect): DetectionResult? {
         val bounds = Rect()
         node.getBoundsInScreen(bounds)
         
         if (!area.contains(bounds)) {
-            for (i in 0 until node.childCount) {
-                val child = node.getChild(i) ?: continue
-                try {
-                    val result = detectCountdown(child, area)
-                    if (result != null) return result
-                } finally {
-                    child.recycle()
-                }
-            }
-            return null
+            return scanChildren(node, area) { detectCountdown(it, area) }
         }
         
         val text = node.text?.toString()?.trim() ?: ""
@@ -487,38 +493,80 @@ class AdDetectorSimple(private val prefs: PreferencesManager) {
         // 完整倒计时模式
         val fullMatch = COUNTDOWN_KEYWORDS.find { fullText.contains(it) }
         if (fullMatch != null) {
-            Log.d(TAG, "【倒计时进行中】$fullMatch")
-            callback?.onStateChanged(AdState.COUNTDOWN, Action.WAIT, fullMatch)
-            return DetectionResult(AdState.COUNTDOWN, Action.WAIT, fullMatch, node)
+            currentState = AdState.AD_COUNTDOWN
+            return DetectionResult(AdState.AD_COUNTDOWN, Action.WAIT, fullMatch, node)
         }
         
         // 数字+后模式
         if (fullText.contains(Regex("""[1-9]秒.*后"""))) {
-            val match = Regex("""[1-9]秒.*""").find(fullText)?.value?.take(20) ?: "倒计时中"
-            Log.d(TAG, "【倒计时进行中】$match")
-            callback?.onStateChanged(AdState.COUNTDOWN, Action.WAIT, match)
-            return DetectionResult(AdState.COUNTDOWN, Action.WAIT, match, node)
+            currentState = AdState.AD_COUNTDOWN
+            return DetectionResult(AdState.AD_COUNTDOWN, Action.WAIT, "倒计时中", node)
         }
         
-        // 递归检查子节点
+        return scanChildren(node, area) { detectCountdown(it, area) }
+    }
+
+    // ========== 弹窗检测 ==========
+    private fun detectPopup(node: AccessibilityNodeInfo, screen: Rect): DetectionResult? {
+        val bounds = Rect()
+        node.getBoundsInScreen(bounds)
+        
+        if (!screen.contains(bounds) && !isWithinBounds(bounds, screen)) {
+            return scanChildren(node, screen) { detectPopup(it, screen) }
+        }
+        
+        val text = node.text?.toString()?.trim() ?: ""
+        val contentDesc = node.contentDescription?.toString()?.trim() ?: ""
+        val className = node.className?.toString()?.lowercase() ?: ""
+        val fullText = "$text $contentDesc"
+        
+        // 优先检测"继续领取"类弹窗
+        val hasContinueKeyword = POPUP_CONTINUE_KEYWORDS.any { fullText.contains(it) }
+        
+        if (hasContinueKeyword) {
+            if (className.contains("button") || className.contains("image") || node.isClickable) {
+                log("【弹窗-继续领取】$fullText")
+                currentState = AdState.POPUP_HANDLING
+                callback?.onStateChanged(AdState.POPUP_HANDLING, Action.CLICK_POPUP, fullText)
+                return DetectionResult(AdState.POPUP_HANDLING, Action.CLICK_POPUP, fullText, node)
+            }
+            
+            val parentNode = findClickableParent(node)
+            if (parentNode != null) {
+                log("【弹窗-继续领取】$fullText (父节点)")
+                currentState = AdState.POPUP_HANDLING
+                callback?.onStateChanged(AdState.POPUP_HANDLING, Action.CLICK_POPUP, fullText)
+                return DetectionResult(AdState.POPUP_HANDLING, Action.CLICK_POPUP, fullText, parentNode)
+            }
+        }
+        
+        return scanChildren(node, screen) { detectPopup(it, screen) }
+    }
+
+    // ========== 辅助方法 ==========
+    
+    private fun isWithinBounds(bounds: Rect, container: Rect): Boolean {
+        return bounds.left < container.right && bounds.right > container.left &&
+               bounds.top < container.bottom && bounds.bottom > container.top
+    }
+    
+    private inline fun scanChildren(
+        node: AccessibilityNodeInfo, 
+        area: Rect, 
+        scanner: (AccessibilityNodeInfo) -> DetectionResult?
+    ): DetectionResult? {
         for (i in 0 until node.childCount) {
             val child = node.getChild(i) ?: continue
             try {
-                val result = detectCountdown(child, area)
+                val result = scanner(child)
                 if (result != null) return result
             } finally {
                 child.recycle()
             }
         }
-        
         return null
     }
-
-    // ========== 辅助方法 ==========
     
-    /**
-     * 在指定区域内查找关闭按钮
-     */
     private fun findCloseButton(node: AccessibilityNodeInfo, area: Rect): AccessibilityNodeInfo? {
         val bounds = Rect()
         node.getBoundsInScreen(bounds)
@@ -528,54 +576,37 @@ class AdDetectorSimple(private val prefs: PreferencesManager) {
             val contentDesc = node.contentDescription?.toString()?.trim() ?: ""
             val className = node.className?.toString()?.lowercase() ?: ""
             
-            val hasCloseKeyword = CLOSE_BUTTON_KEYWORDS.any { 
-                text.contains(it, ignoreCase = true) || contentDesc.contains(it, ignoreCase = true)
-            }
-            
-            if (hasCloseKeyword && (className.contains("button") || className.contains("image"))) {
-                return node
+            if (CLOSE_BUTTON_KEYWORDS.any { text.contains(it, ignoreCase = true) || contentDesc.contains(it, ignoreCase = true) }) {
+                if (className.contains("button") || className.contains("image") || node.isClickable) {
+                    return node
+                }
             }
         }
         
-        for (i in 0 until node.childCount) {
-            val child = node.getChild(i) ?: continue
-            try {
-                val result = findCloseButton(child, area)
-                if (result != null) return result
-            } finally {
-                child.recycle()
-            }
-        }
-        
-        return null
+        return scanChildren(node, area) { findCloseButton(it, area) }
     }
     
-    /**
-     * 查找可点击的父节点
-     */
     private fun findClickableParent(node: AccessibilityNodeInfo): AccessibilityNodeInfo? {
-        var current: AccessibilityNodeInfo? = node
+        var current: AccessibilityNodeInfo? = node.parent
         while (current != null) {
             if (current.isClickable) {
                 return current
             }
-            current = current.parent
+            val parent = current.parent
+            current.recycle()
+            current = parent
         }
         return null
     }
+    
+    private fun log(message: String) {
+        Log.d(TAG, message)
+        callback?.onLog(message)
+    }
 
-    /**
-     * 获取当前状态
-     */
+    // ========== 状态查询 ==========
     fun getCurrentState(): AdState = currentState
-    
-    /**
-     * 是否正在执行任务
-     */
-    fun isTaskRunning(): Boolean = currentState != AdState.IDLE && currentState != AdState.TASK_COMPLETE
-    
-    /**
-     * 获取循环次数
-     */
     fun getLoopCount(): Int = loopCount
+    fun getFailCount(): Int = failCount
+    fun isPaused(): Boolean = currentState == AdState.PAUSED
 }

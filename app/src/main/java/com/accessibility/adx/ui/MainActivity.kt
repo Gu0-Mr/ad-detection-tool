@@ -6,14 +6,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.provider.Settings
 import android.view.View
-import android.widget.Button
-import android.widget.ImageButton
-import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -32,18 +27,22 @@ import com.accessibility.adx.service.FloatWindowService
 import com.accessibility.adx.Constants.ACTION_AD_DETECTED
 import com.accessibility.adx.Constants.ACTION_DETECTION_STATUS_CHANGED
 import com.accessibility.adx.Constants.ACTION_STOP
-import com.accessibility.adx.Constants.EXTRA_DETECTION_COUNT
-import com.accessibility.adx.Constants.EXTRA_TOTAL_COUNT
+import com.accessibility.adx.Constants.ACTION_APP_STATE_CHANGED
 
 /**
  * 主界面Activity
  * 控制应用的主要功能和状态显示
+ * 作者：古封
  */
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var prefs: PreferencesManager
     private lateinit var localBroadcastManager: LocalBroadcastManager
+    
+    // 当前应用状态
+    private var currentPackageName = ""
+    private var isCurrentAppSupported = false
 
     // 权限请求
     private val notificationPermissionLauncher = registerForActivityResult(
@@ -85,8 +84,8 @@ class MainActivity : AppCompatActivity() {
      * 初始化视图
      */
     private fun setupViews() {
-        // 版本信息
-        binding.tvVersion.text = getString(R.string.about_version, BuildConfig.VERSION_NAME)
+        // 版本信息（显示作者）
+        binding.tvVersion.text = getString(R.string.app_version_format, BuildConfig.VERSION_NAME)
     }
 
     /**
@@ -138,15 +137,51 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, SettingsActivity::class.java))
         }
 
-        // 清除统计
+        // 关于按钮
         binding.btnClearStats.setOnClickListener {
+            showAboutDialog()
+        }
+
+        // 清除统计（长按）
+        binding.tvTotalCount.setOnLongClickListener {
             showClearStatsDialog()
+            true
         }
 
         // 权限提示点击
         binding.tvAccessibilityHint.setOnClickListener {
             PermissionUtils.openAccessibilitySettings(this)
         }
+        
+        // 适配名单按钮点击
+        binding.tvTotalCount.setOnClickListener {
+            // 打开适配名单
+            startActivity(Intent(this, SupportedAppsActivity::class.java))
+        }
+    }
+
+    /**
+     * 显示关于对话框
+     */
+    private fun showAboutDialog() {
+        val aboutMessage = """
+            ${getString(R.string.app_name_full)}
+            
+            ${getString(R.string.about_author)}
+            
+            ${getString(R.string.about_description)}
+            
+            版本：${BuildConfig.VERSION_NAME}
+        """.trimIndent()
+
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.dialog_about_title))
+            .setMessage(aboutMessage)
+            .setPositiveButton(R.string.dialog_confirm, null)
+            .setNeutralButton(R.string.btn_supported_apps) { _, _ ->
+                startActivity(Intent(this, SupportedAppsActivity::class.java))
+            }
+            .show()
     }
 
     /**
@@ -160,6 +195,10 @@ class MainActivity : AppCompatActivity() {
         localBroadcastManager.registerReceiver(
             broadcastReceiver,
             IntentFilter(ACTION_DETECTION_STATUS_CHANGED)
+        )
+        localBroadcastManager.registerReceiver(
+            broadcastReceiver,
+            IntentFilter(ACTION_APP_STATE_CHANGED)
         )
     }
 
@@ -175,6 +214,12 @@ class MainActivity : AppCompatActivity() {
                 ACTION_DETECTION_STATUS_CHANGED -> {
                     updateStatusText()
                     updateFloatWindowSwitch()
+                }
+                ACTION_APP_STATE_CHANGED -> {
+                    // 应用状态变化，更新当前应用信息
+                    currentPackageName = intent.getStringExtra(Constants.EXTRA_CURRENT_PACKAGE) ?: ""
+                    isCurrentAppSupported = intent.getBooleanExtra(Constants.EXTRA_IS_SUPPORTED, false)
+                    updateStatusText()
                 }
             }
         }
@@ -212,12 +257,25 @@ class MainActivity : AppCompatActivity() {
      * 更新状态文本
      */
     private fun updateStatusText() {
-        val statusText = if (AdDetectionService.isRunning) {
-            getString(R.string.status_enabled)
-        } else {
-            getString(R.string.status_disabled)
+        val statusText = when {
+            AdDetectionService.isRunning && isCurrentAppSupported -> {
+                val appName = Constants.getSupportedApp(currentPackageName)?.appName ?: currentPackageName
+                getString(R.string.status_listening, appName)
+            }
+            AdDetectionService.isRunning && !isCurrentAppSupported && currentPackageName.isNotEmpty() -> {
+                getString(R.string.status_not_supported_app)
+            }
+            prefs.isAccessibilityEnabled -> getString(R.string.status_running)
+            else -> getString(R.string.status_disabled)
         }
         binding.tvStatus.text = statusText
+        
+        // 根据状态设置颜色
+        if (isCurrentAppSupported) {
+            binding.tvStatus.setTextColor(ContextCompat.getColor(this, R.color.status_enabled))
+        } else if (currentPackageName.isNotEmpty()) {
+            binding.tvStatus.setTextColor(ContextCompat.getColor(this, R.color.status_warning))
+        }
     }
 
     /**

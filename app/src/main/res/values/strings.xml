@@ -1,33 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">广告检测工具</string>
-    <string name="app_name_full">广告检测工具 Pro</string>
+    <string name="app_name">广告自动助手</string>
+    <string name="app_name_full">广告自动助手 Pro</string>
+    <string name="app_author">古封</string>
+    <string name="app_version_format">v%s by 古封</string>
 
     <!-- AccessibilityService描述 -->
-    <string name="accessibility_service_description">广告检测工具可帮助您检测和关闭应用中的广告弹窗。\n\n主要功能：\n• 检测广告关闭按钮\n• 震动提醒\n• 声音提示\n• 悬浮窗显示状态\n\n使用前请确保已开启无障碍服务权限。</string>
+    <string name="accessibility_service_description">广告自动助手可帮助您全自动完成"领时长"任务。\n\n主要功能：\n• 自动检测"领时长"按钮\n• 自动完成广告观看\n• 自动领取奖励\n• 循环执行\n\n作者：古封</string>
 
     <!-- 主界面标题 -->
-    <string name="title_main">广告检测工具</string>
+    <string name="title_main">广告自动助手</string>
     <string name="title_settings">设置</string>
     <string name="title_statistics">检测统计</string>
+    <string name="title_about">关于</string>
+    <string name="title_supported_apps">适配名单</string>
 
     <!-- 开关状态 -->
     <string name="status_enabled">已开启</string>
     <string name="status_disabled">已关闭</string>
     <string name="status_running">检测中</string>
     <string name="status_stopped">已停止</string>
+    <string name="status_ready">准备就绪</string>
+    <string name="status_app_installed">已适配</string>
+    <string name="status_app_not_installed">未安装</string>
+    <string name="status_unsupported">未适配</string>
+    <string name="status_not_supported_app">此应用未适配</string>
+    <string name="status_listening">正在监听：%s</string>
 
     <!-- 主界面功能 -->
     <string name="func_accessibility">无障碍服务</string>
-    <string name="func_accessibility_desc">监听并检测广告关闭按钮</string>
+    <string name="func_accessibility_desc">监听并检测广告内容</string>
     <string name="func_float_window">悬浮窗</string>
-    <string name="func_float_window_desc">显示检测状态和计数</string>
+    <string name="func_float_window_desc">显示运行状态</string>
     <string name="func_vibration">震动提醒</string>
-    <string name="func_vibration_desc">检测到广告时震动</string>
+    <string name="func_vibration_desc">震动提示</string>
     <string name="func_sound">声音提示</string>
-    <string name="func_sound_desc">检测到广告时播放提示音</string>
+    <string name="func_sound_desc">声音提示</string>
     <string name="func_auto_close">自动关闭</string>
-    <string name="func_auto_close_desc">自动点击广告关闭按钮</string>
+    <string name="func_auto_close_desc">自动处理广告</string>
+    <string name="func_supported_apps">适配名单</string>
+    <string name="func_supported_apps_desc">查看已支持的APP列表</string>
 
     <!-- 设置项 -->
     <string name="setting_vibration_intensity">震动强度</string>
@@ -37,45 +49,52 @@
     <string name="setting_detection_area">检测区域</string>
 
     <!-- 统计信息 -->
-    <string name="stat_total_detected">总检测数</string>
-    <string name="stat_today_detected">今日检测</string>
-    <string name="stat_this_week">本周检测</string>
+    <string name="stat_total_detected">总完成任务</string>
+    <string name="stat_today_detected">今日完成</string>
+    <string name="stat_this_week">本周完成</string>
     <string name="stat_top_apps">高频应用</string>
 
     <!-- 按钮文字 -->
     <string name="btn_start">开始检测</string>
     <string name="btn_stop">停止检测</string>
     <string name="btn_settings">设置</string>
+    <string name="btn_about">关于</string>
+    <string name="btn_supported_apps">适配名单</string>
     <string name="btn_clear_stats">清除统计</string>
     <string name="btn_grant_permission">授予权限</string>
-    <string name="btn_open_settings">打开设置</string>
 
-    <!-- 通知 -->
-    <string name="notification_channel_name">检测服务</string>
-    <string name="notification_channel_desc">广告检测前台服务通知</string>
-    <string name="notification_title">广告检测工具运行中</string>
-    <string name="notification_content">正在监听广告关闭按钮…</string>
+    <!-- 通知栏 -->
+    <string name="notification_title">广告自动助手</string>
+    <string name="notification_content">作者：古封 - 运行中</string>
+    <string name="notification_content_loop">循环执行中 (第%1$d次)</string>
+
+    <!-- 提示信息 -->
+    <string name="tip_stats_cleared">统计数据已清除</string>
+    <string name="tip_service_started">服务已启动</string>
+    <string name="tip_service_stopped">服务已停止</string>
+    <string name="tip_permission_denied">权限不足</string>
+    <string name="tip_supported_apps">以下应用已适配"领时长"自动点击功能\n点击已安装的应用可直接打开\n长按或点击未安装的应用可跳转到应用商店</string>
+
+    <!-- 版本信息 -->
+    <string name="about_version">版本 %s</string>
+    <string name="about_author">作者：古封</string>
+    <string name="about_description">全自动广告领时长工具\n自动检测"领时长"按钮\n自动完成广告观看\n自动领取奖励\n循环执行</string>
+
+    <!-- 弹窗 -->
+    <string name="dialog_clear_title">清除统计</string>
+    <string name="dialog_clear_message">确定要清除所有统计数据吗？</string>
+    <string name="dialog_confirm">确定</string>
+    <string name="dialog_cancel">取消</string>
+    <string name="dialog_about_title">关于 - 广告自动助手</string>
+
+    <!-- 空状态 -->
+    <string name="empty_app_list">暂无应用</string>
+
+    <!-- 内容描述 -->
+    <string name="app_icon">应用图标</string>
 
     <!-- 悬浮窗 -->
     <string name="float_detecting">检测中</string>
-    <string name="float_count">已检测: %d</string>
-    <string name="float_tap_to_open">点击打开</string>
-
-    <!-- 提示信息 -->
-    <string name="tip_grant_accessibility">请先开启无障碍服务权限</string>
-    <string name="tip_grant_overlay">请先授予悬浮窗权限</string>
-    <string name="tip_service_started">检测服务已启动</string>
-    <string name="tip_service_stopped">检测服务已停止</string>
-    <string name="tip_ad_detected">检测到广告！</string>
-    <string name="tip_stats_cleared">统计数据已清除</string>
-
-    <!-- 对话框 -->
-    <string name="dialog_confirm">确认</string>
-    <string name="dialog_cancel">取消</string>
-    <string name="dialog_clear_title">清除统计</string>
-    <string name="dialog_clear_message">确定要清除所有检测统计数据吗？</string>
-
-    <!-- 关于 -->
-    <string name="about_version">版本 %s</string>
-    <string name="about_description">一款智能检测和关闭广告弹窗的工具</string>
+    <string name="float_count">已完成 %d 次</string>
+    <string name="float_not_supported">当前应用未适配</string>
 </resources>

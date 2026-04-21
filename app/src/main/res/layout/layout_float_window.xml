@@ -41,6 +41,16 @@
             android:textColor="@color/float_text"
             android:textSize="11sp" />
 
+        <!-- 作者署名 -->
+        <TextView
+            android:id="@+id/tvFloatAuthor"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="古封制作"
+            android:textColor="@color/float_text"
+            android:textSize="9sp"
+            android:alpha="0.6" />
+
     </LinearLayout>
 
     <!-- 快捷控制按钮 -->

@@ -115,7 +115,7 @@ class AdDetectorSimple(private val prefs: PreferencesManager) {
     fun pause() {
         currentState = AdState.PAUSED
         failCount++
-        log("【服务暂停】连续失败$failCount次，暂停${FAIL_PAUSE_TIME/1000/60}分钟")
+        log("【服务暂停】连续失败${failCount}次，暂停${FAIL_PAUSE_TIME/1000/60}分钟")
         callback?.onStateChanged(AdState.PAUSED, Action.NONE, "暂停服务")
         
         android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
@@ -273,7 +273,7 @@ class AdDetectorSimple(private val prefs: PreferencesManager) {
                 
                 updateState(AdState.DETECTING_CLAIM)
                 callback?.onStateChanged(AdState.DETECTING_CLAIM, Action.CLICK_CLAIM_TIME, matchedKeyword)
-                return DetectionResult(AdState.DETECTING_CLAIM, Action.CLICK_CLAIM_TIME, matchedKeyword, node = node)
+                return DetectionResult(AdState.DETECTING_CLAIM, Action.CLICK_CLAIM_TIME, matchedKeyword, targetNode = node)
             }
             
             // 找可点击父节点
@@ -332,7 +332,7 @@ class AdDetectorSimple(private val prefs: PreferencesManager) {
             log("【关闭】点击成功区域")
             updateState(AdState.AD_CLOSING)
             callback?.onStateChanged(AdState.AD_CLOSING, Action.CLICK_CLOSE, fullText)
-            return DetectionResult(AdState.AD_CLOSING, Action.CLICK_CLOSE, fullText, node = node)
+            return DetectionResult(AdState.AD_CLOSING, Action.CLICK_CLOSE, fullText, targetNode = node)
         }
         
         // 单独检测关闭按钮
@@ -340,7 +340,7 @@ class AdDetectorSimple(private val prefs: PreferencesManager) {
             log("【关闭按钮】$fullText")
             updateState(AdState.AD_CLOSING)
             callback?.onStateChanged(AdState.AD_CLOSING, Action.CLICK_CLOSE, fullText)
-            return DetectionResult(AdState.AD_CLOSING, Action.CLICK_CLOSE, fullText, node = node)
+            return DetectionResult(AdState.AD_CLOSING, Action.CLICK_CLOSE, fullText, targetNode = node)
         }
         
         return scanChildren(node, area, ::detectRewardSuccessAndClose)
@@ -373,7 +373,7 @@ class AdDetectorSimple(private val prefs: PreferencesManager) {
                 log("【可领取】$matchedKeyword")
                 updateState(AdState.AD_REWARD_READY)
                 callback?.onStateChanged(AdState.AD_REWARD_READY, Action.CLICK_REWARD, matchedKeyword)
-                return DetectionResult(AdState.AD_REWARD_READY, Action.CLICK_REWARD, matchedKeyword, node = node)
+                return DetectionResult(AdState.AD_REWARD_READY, Action.CLICK_REWARD, matchedKeyword, targetNode = node)
             }
             
             findClickableParent(node)?.let { parent ->
@@ -407,13 +407,13 @@ class AdDetectorSimple(private val prefs: PreferencesManager) {
         // 完整倒计时模式
         COUNTDOWN_KEYWORDS.find { fullText.contains(it) }?.let {
             updateState(AdState.AD_COUNTDOWN)
-            return DetectionResult(AdState.AD_COUNTDOWN, Action.WAIT, it, node = node)
+            return DetectionResult(AdState.AD_COUNTDOWN, Action.WAIT, it, targetNode = node)
         }
         
         // 数字+后模式
         if (fullText.contains(Regex("""[1-9]秒.*后"""))) {
             updateState(AdState.AD_COUNTDOWN)
-            return DetectionResult(AdState.AD_COUNTDOWN, Action.WAIT, "倒计时中", node = node)
+            return DetectionResult(AdState.AD_COUNTDOWN, Action.WAIT, "倒计时中", targetNode = node)
         }
         
         return scanChildren(node, area, ::detectCountdown)
@@ -443,7 +443,7 @@ class AdDetectorSimple(private val prefs: PreferencesManager) {
                 log("【弹窗】$fullText")
                 updateState(AdState.POPUP_HANDLING)
                 callback?.onStateChanged(AdState.POPUP_HANDLING, Action.CLICK_POPUP, fullText)
-                return DetectionResult(AdState.POPUP_HANDLING, Action.CLICK_POPUP, fullText, node = node)
+                return DetectionResult(AdState.POPUP_HANDLING, Action.CLICK_POPUP, fullText, targetNode = node)
             }
             
             findClickableParent(node)?.let { parent ->

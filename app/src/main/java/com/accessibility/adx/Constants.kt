@@ -19,6 +19,7 @@ object Constants {
     const val ACTION_START = "com.accessibility.adx.ACTION_START_SERVICE"
     const val ACTION_STOP = "com.accessibility.adx.ACTION_STOP_SERVICE"
     const val ACTION_KEEP_ALIVE = "com.accessibility.adx.ACTION_KEEP_ALIVE"
+    const val ACTION_APP_STATE_CHANGED = "com.accessibility.adx.ACTION_APP_STATE_CHANGED"
 
     // ========== 广播 Extra ==========
     const val EXTRA_DETECTION_COUNT = "extra_detection_count"
@@ -124,16 +125,17 @@ object Constants {
     data class SupportedApp(
         val packageName: String,
         val appName: String,
+        val description: String = "支持领时长自动任务", // 添加描述字段
         val hasTimeClaim: Boolean = true
     )
     
     val SUPPORTED_APPS = listOf(
-        SupportedApp("com.netease.cloudmusic", "汽水音乐"),
-        SupportedApp("com.tencent.qqmusic", "QQ音乐"),
-        SupportedApp("com.tencent.videolite", "腾讯视频"),
-        SupportedApp("com.dragon.read", "番茄免费小说"),
-        SupportedApp("com.netease.cloudmusic", "网易云音乐"),  // 与汽水音乐相同包名
-        SupportedApp("com.qiyi.video", "爱奇艺视频")
+        SupportedApp("com.netease.cloudmusic", "汽水音乐", "支持看视频领时长功能"),
+        SupportedApp("com.tencent.qqmusic", "QQ音乐", "支持听歌领时长功能"),
+        SupportedApp("com.tencent.videolite", "腾讯视频", "支持看视频领时长功能"),
+        SupportedApp("com.dragon.read", "番茄免费小说", "支持看小说领时长功能"),
+        SupportedApp("com.netease.cloudmusic", "网易云音乐", "支持听歌领时长功能"),  // 与汽水音乐相同包名
+        SupportedApp("com.qiyi.video", "爱奇艺视频", "支持看视频领时长功能")
     )
     
     /**
@@ -141,5 +143,19 @@ object Constants {
      */
     fun isKnownApp(packageName: String): Boolean {
         return SUPPORTED_APPS.any { it.packageName == packageName }
+    }
+    
+    /**
+     * 检查应用是否支持领时长功能
+     */
+    fun isAppSupported(packageName: String): Boolean {
+        return SUPPORTED_APPS.any { it.packageName == packageName }
+    }
+    
+    /**
+     * 根据包名获取支持的应用信息
+     */
+    fun getSupportedApp(packageName: String): SupportedApp? {
+        return SUPPORTED_APPS.find { it.packageName == packageName }
     }
 }

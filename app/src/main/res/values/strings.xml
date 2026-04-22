@@ -64,6 +64,8 @@
     <string name="btn_grant_permission">授予权限</string>
 
     <!-- 通知栏 -->
+    <string name="notification_channel_name">检测服务</string>
+    <string name="notification_channel_desc">广告检测前台服务通知</string>
     <string name="notification_title">广告自动助手</string>
     <string name="notification_content">作者：古封 - 运行中</string>
     <string name="notification_content_loop">循环执行中 (第%1$d次)</string>

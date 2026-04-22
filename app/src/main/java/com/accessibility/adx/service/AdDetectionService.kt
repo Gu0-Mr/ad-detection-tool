@@ -233,7 +233,6 @@ class AdDetectionService : AccessibilityService() {
                 
                 // 重置检测器
                 adDetector.reset()
-                adDetector.setSupportedApp(isSupported)
             }
         }
         
@@ -251,7 +250,7 @@ class AdDetectionService : AccessibilityService() {
         if (adDetector.isPaused()) return
         
         // 如果当前APP不在适配名单中，跳过检测
-        if (!adDetector.isCurrentAppSupported() && lastPackageName.isNotEmpty()) {
+        if (!Constants.isAppSupported(lastPackageName) && lastPackageName.isNotEmpty()) {
             return
         }
         

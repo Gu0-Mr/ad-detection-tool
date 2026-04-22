@@ -31,8 +31,14 @@ object PermissionUtils {
             AccessibilityServiceInfo.FEEDBACK_ALL_MASK
         )
 
+        // 提取简化的服务名称（只取类名部分）
+        val simpleClassName = serviceClassName.substringAfterLast(".")
+        
         return enabledServices.any { service ->
-            service.id.contains(serviceClassName)
+            // 检查多种匹配方式
+            service.id.contains(simpleClassName) ||
+            service.id.contains(serviceClassName) ||
+            service.resolveInfo.serviceInfo.name.contains(simpleClassName)
         }
     }
 

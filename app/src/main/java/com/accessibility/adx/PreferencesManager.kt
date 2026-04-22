@@ -28,6 +28,8 @@ class PreferencesManager private constructor(context: Context) {
         private const val KEY_TODAY_COUNT = "today_count"
         private const val KEY_LAST_DATE = "last_date"
         private const val KEY_BATTERY_OPTIMIZATION_SHOWN = "battery_optimization_shown"
+        private const val KEY_FLOAT_X = "float_x"
+        private const val KEY_FLOAT_Y = "float_y"
         
         @Volatile
         private var instance: PreferencesManager? = null
@@ -51,6 +53,14 @@ class PreferencesManager private constructor(context: Context) {
         get() = prefs.getBoolean(KEY_FLOAT_WINDOW_ENABLED, false)
         set(value) = prefs.edit().putBoolean(KEY_FLOAT_WINDOW_ENABLED, value).apply()
 
+    var floatX: Int
+        get() = prefs.getInt(KEY_FLOAT_X, 200)
+        set(value) = prefs.edit().putInt(KEY_FLOAT_X, value).apply()
+
+    var floatY: Int
+        get() = prefs.getInt(KEY_FLOAT_Y, 300)
+        set(value) = prefs.edit().putInt(KEY_FLOAT_Y, value).apply()
+
     // ==================== 震动 ====================
     var isVibrationEnabled: Boolean
         get() = prefs.getBoolean(KEY_VIBRATION_ENABLED, true)
@@ -72,6 +82,11 @@ class PreferencesManager private constructor(context: Context) {
     var soundVolume: Int
         get() = prefs.getInt(KEY_SOUND_VOLUME, 80)
         set(value) = prefs.edit().putInt(KEY_SOUND_VOLUME, value.coerceIn(0, 100)).apply()
+
+    // ==================== 电池优化 ====================
+    var hasShownBatteryOptimizationDialog: Boolean
+        get() = prefs.getBoolean(KEY_BATTERY_OPTIMIZATION_SHOWN, false)
+        set(value) = prefs.edit().putBoolean(KEY_BATTERY_OPTIMIZATION_SHOWN, value).apply()
 
     // ==================== 统计数据 ====================
     var totalCount: Int

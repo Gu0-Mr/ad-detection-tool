@@ -263,7 +263,7 @@ class AdDetectionService : AccessibilityService() {
                     
                     // 更新统计数据
                     prefs.totalCount++
-                    prefs.todayCount++
+                    prefs.incrementCount()
                     
                     // 通过 ViewModel 通知更新
                     statusViewModel?.apply {
@@ -323,7 +323,7 @@ class AdDetectionService : AccessibilityService() {
         }
         
         when (action) {
-            AdDetectorSimple.AdState.AD_SUCCESS -> {
+            AdDetectorSimple.Action.COMPLETE -> {
                 // 任务完成
                 Log.d(TAG, "【任务完成】总计检测: $detectionCount")
             }
@@ -339,7 +339,7 @@ class AdDetectionService : AccessibilityService() {
             vibrationManager.vibrate()
         }
         if (prefs.isSoundEnabled) {
-            soundManager.playClick()
+            soundManager.playSound()
         }
     }
 

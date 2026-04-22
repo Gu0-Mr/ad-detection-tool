@@ -8,6 +8,7 @@ import android.content.Intent
 import android.graphics.PixelFormat
 import android.os.Build
 import android.os.Handler
+import android.os.IBinder
 import android.os.Looper
 import android.view.Gravity
 import android.view.LayoutInflater
@@ -202,8 +203,8 @@ class FloatWindowService : Service() {
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START
-            x = prefs.x ?: DEFAULT_X
-            y = prefs.y ?: DEFAULT_Y
+            x = prefs.floatX
+            y = prefs.floatY
         }
         return params
     }
@@ -279,8 +280,8 @@ class FloatWindowService : Service() {
                     } else {
                         // 保存位置
                         layoutParams?.let { params ->
-                            prefs.x = params.x
-                            prefs.y = params.y
+                            prefs.floatX = params.x
+                            prefs.floatY = params.y
                         }
                     }
                     

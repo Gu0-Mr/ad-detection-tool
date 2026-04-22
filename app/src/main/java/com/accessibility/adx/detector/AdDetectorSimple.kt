@@ -284,7 +284,7 @@ class AdDetectorSimple(private val prefs: PreferencesManager) {
                 
                 updateState(AdState.DETECTING_CLAIM)
                 callback?.onStateChanged(AdState.DETECTING_CLAIM, Action.CLICK_CLAIM_TIME, matchedKeyword)
-                return DetectionResult(AdState.DETECTING_CLAIM, Action.CLICK_CLAIM_TIME, matchedKeyword, node = parent)
+                return DetectionResult(AdState.DETECTING_CLAIM, Action.CLICK_CLAIM_TIME, matchedKeyword, targetNode = parent)
             }
         }
         
@@ -321,11 +321,9 @@ class AdDetectorSimple(private val prefs: PreferencesManager) {
             log("【领取成功】$fullText")
             
             // 优先找关闭按钮
-            findCloseButton(node, area)?.let { closeNode ->
+            findCloseButton(node, area)?.let { closeResult ->
                 log("【关闭】找到关闭按钮")
-                updateState(AdState.AD_CLOSING)
-                callback?.onStateChanged(AdState.AD_CLOSING, Action.CLICK_CLOSE, fullText)
-                return DetectionResult(AdState.AD_CLOSING, Action.CLICK_CLOSE, fullText, node = closeNode)
+                return closeResult
             }
             
             // 点击成功区域
@@ -380,7 +378,7 @@ class AdDetectorSimple(private val prefs: PreferencesManager) {
                 log("【可领取】$matchedKeyword (父节点)")
                 updateState(AdState.AD_REWARD_READY)
                 callback?.onStateChanged(AdState.AD_REWARD_READY, Action.CLICK_REWARD, matchedKeyword)
-                return DetectionResult(AdState.AD_REWARD_READY, Action.CLICK_REWARD, matchedKeyword, node = parent)
+                return DetectionResult(AdState.AD_REWARD_READY, Action.CLICK_REWARD, matchedKeyword, targetNode = parent)
             }
         }
         
@@ -450,7 +448,7 @@ class AdDetectorSimple(private val prefs: PreferencesManager) {
                 log("【弹窗】$fullText (父节点)")
                 updateState(AdState.POPUP_HANDLING)
                 callback?.onStateChanged(AdState.POPUP_HANDLING, Action.CLICK_POPUP, fullText)
-                return DetectionResult(AdState.POPUP_HANDLING, Action.CLICK_POPUP, fullText, node = parent)
+                return DetectionResult(AdState.POPUP_HANDLING, Action.CLICK_POPUP, fullText, targetNode = parent)
             }
         }
         
@@ -510,7 +508,7 @@ class AdDetectorSimple(private val prefs: PreferencesManager) {
         return null
     }
     
-    private fun findCloseButton(node: AccessibilityNodeInfo, area: Rect): AccessibilityNodeInfo? {
+    private fun findCloseButton(node: AccessibilityNodeInfo, area: Rect): DetectionResult? {
         val bounds = Rect()
         node.getBoundsInScreen(bounds)
         
@@ -520,7 +518,7 @@ class AdDetectorSimple(private val prefs: PreferencesManager) {
             
             if (CLOSE_BUTTON_KEYWORDS.any { text.contains(it, ignoreCase = true) || contentDesc.contains(it, ignoreCase = true) }) {
                 if (isClickable(node)) {
-                    return node
+                    return DetectionResult(AdState.AD_CLOSING, Action.CLICK_CLOSE, text.ifEmpty { contentDesc }, targetNode = node)
                 }
             }
         }

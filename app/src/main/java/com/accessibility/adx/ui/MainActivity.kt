@@ -1,20 +1,22 @@
 package com.accessibility.adx.ui
 
 import android.Manifest
-import android.content.BroadcastReceiver
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
+import android.provider.Settings
 import android.view.View
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.accessibility.adx.BuildConfig
 import com.accessibility.adx.Constants
 import com.accessibility.adx.PreferencesManager
@@ -24,10 +26,7 @@ import com.accessibility.adx.databinding.ActivityMainBinding
 import com.accessibility.adx.service.AdDetectionService
 import com.accessibility.adx.service.DetectionService
 import com.accessibility.adx.service.FloatWindowService
-import com.accessibility.adx.Constants.ACTION_AD_DETECTED
-import com.accessibility.adx.Constants.ACTION_DETECTION_STATUS_CHANGED
-import com.accessibility.adx.Constants.ACTION_STOP
-import com.accessibility.adx.Constants.ACTION_APP_STATE_CHANGED
+import com.accessibility.adx.viewmodel.ServiceStatusViewModel
 
 /**
  * 主界面Activity
@@ -38,7 +37,9 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var prefs: PreferencesManager
-    private lateinit var localBroadcastManager: LocalBroadcastManager
+    
+    // ViewModel 用于服务状态观察
+    private val statusViewModel: ServiceStatusViewModel by viewModels()
     
     // 当前应用状态
     private var currentPackageName = ""
@@ -62,22 +63,19 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         prefs = PreferencesManager.getInstance(this)
-        localBroadcastManager = LocalBroadcastManager.getInstance(this)
 
         setupViews()
         setupClickListeners()
-        registerBroadcastReceiver()
+        observeViewModel()
         updateUI()
+        
+        // 检查电池优化
+        checkBatteryOptimization()
     }
 
     override fun onResume() {
         super.onResume()
         updateUI()
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        localBroadcastManager.unregisterReceiver(broadcastReceiver)
     }
 
     /**
@@ -161,6 +159,99 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
+     * 观察 ViewModel 数据
+     */
+    private fun observeViewModel() {
+        // 观察应用状态变化
+        statusViewModel.appStateChanged.observe(this) { changed ->
+            if (changed) {
+                statusViewModel.resetAppStateChanged()
+                updateStatusText()
+            }
+        }
+        
+        // 观察检测计数变化
+        statusViewModel.detectionCount.observe(this) {
+            updateStatistics()
+        }
+        
+        // 观察总计数变化
+        statusViewModel.totalCount.observe(this) {
+            updateStatistics()
+        }
+        
+        // 观察今日计数变化
+        statusViewModel.todayCount.observe(this) {
+            updateStatistics()
+        }
+        
+        // 观察当前应用包名
+        statusViewModel.currentPackageName.observe(this) { packageName ->
+            currentPackageName = packageName
+            updateStatusText()
+        }
+        
+        // 观察当前应用是否支持
+        statusViewModel.isCurrentAppSupported.observe(this) { supported ->
+            isCurrentAppSupported = supported
+            updateStatusText()
+        }
+    }
+
+    /**
+     * 检查电池优化
+     */
+    private fun checkBatteryOptimization() {
+        if (!prefs.hasShownBatteryOptimizationDialog) {
+            val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+            if (!powerManager.isIgnoringBatteryOptimizations(packageName)) {
+                showBatteryOptimizationDialog()
+            }
+        }
+    }
+
+    /**
+     * 显示电池优化引导对话框
+     */
+    private fun showBatteryOptimizationDialog() {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.battery_optimization_title)
+            .setMessage(R.string.battery_optimization_message)
+            .setPositiveButton(R.string.battery_optimization_yes) { _, _ ->
+                requestIgnoreBatteryOptimizations()
+            }
+            .setNegativeButton(R.string.battery_optimization_no) { _, _ ->
+                prefs.hasShownBatteryOptimizationDialog = true
+            }
+            .setNeutralButton(R.string.battery_optimization_later, null)
+            .show()
+    }
+
+    /**
+     * 检查是否已忽略电池优化
+     */
+    @SuppressLint("BatteryLife")
+    private fun requestIgnoreBatteryOptimizations() {
+        try {
+            val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                data = Uri.parse("package:$packageName")
+            }
+            startActivity(intent)
+            prefs.hasShownBatteryOptimizationDialog = true
+        } catch (e: Exception) {
+            // 部分设备可能不支持此功能
+            Toast.makeText(this, R.string.battery_optimization_not_supported, Toast.LENGTH_SHORT).show()
+            // 尝试打开电池设置页面
+            try {
+                val fallbackIntent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+                startActivity(fallbackIntent)
+            } catch (e2: Exception) {
+                // 忽略
+            }
+        }
+    }
+
+    /**
      * 显示关于对话框
      */
     private fun showAboutDialog() {
@@ -182,47 +273,6 @@ class MainActivity : AppCompatActivity() {
                 startActivity(Intent(this, SupportedAppsActivity::class.java))
             }
             .show()
-    }
-
-    /**
-     * 注册广播接收器
-     */
-    private fun registerBroadcastReceiver() {
-        localBroadcastManager.registerReceiver(
-            broadcastReceiver,
-            IntentFilter(ACTION_AD_DETECTED)
-        )
-        localBroadcastManager.registerReceiver(
-            broadcastReceiver,
-            IntentFilter(ACTION_DETECTION_STATUS_CHANGED)
-        )
-        localBroadcastManager.registerReceiver(
-            broadcastReceiver,
-            IntentFilter(ACTION_APP_STATE_CHANGED)
-        )
-    }
-
-    /**
-     * 广播接收器
-     */
-    private val broadcastReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            when (intent?.action) {
-                ACTION_AD_DETECTED -> {
-                    updateStatistics()
-                }
-                ACTION_DETECTION_STATUS_CHANGED -> {
-                    updateStatusText()
-                    updateFloatWindowSwitch()
-                }
-                ACTION_APP_STATE_CHANGED -> {
-                    // 应用状态变化，更新当前应用信息
-                    currentPackageName = intent.getStringExtra(Constants.EXTRA_CURRENT_PACKAGE) ?: ""
-                    isCurrentAppSupported = intent.getBooleanExtra(Constants.EXTRA_IS_SUPPORTED, false)
-                    updateStatusText()
-                }
-            }
-        }
     }
 
     /**

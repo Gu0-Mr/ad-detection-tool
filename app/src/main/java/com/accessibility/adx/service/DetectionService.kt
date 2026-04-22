@@ -8,12 +8,12 @@ import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.accessibility.adx.AdXApplication
 import com.accessibility.adx.PreferencesManager
 import com.accessibility.adx.R
 import com.accessibility.adx.ui.MainActivity
 import com.accessibility.adx.util.NotificationHelper
+import com.accessibility.adx.viewmodel.ServiceStatusViewModel
 import com.accessibility.adx.Constants.ACTION_START
 import com.accessibility.adx.Constants.ACTION_STOP
 import com.accessibility.adx.Constants.ACTION_DETECTION_STATUS_CHANGED
@@ -33,12 +33,10 @@ class DetectionService : Service() {
     }
 
     private lateinit var prefs: PreferencesManager
-    private lateinit var localBroadcastManager: LocalBroadcastManager
 
     override fun onCreate() {
         super.onCreate()
         prefs = PreferencesManager.getInstance(this)
-        localBroadcastManager = LocalBroadcastManager.getInstance(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -61,7 +59,7 @@ class DetectionService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         isRunning = false
-        broadcastStatus(false)
+        notifyStatusChanged(false)
     }
 
     /**
@@ -81,7 +79,7 @@ class DetectionService : Service() {
         }
         
         isRunning = true
-        broadcastStatus(true)
+        notifyStatusChanged(true)
     }
 
     /**
@@ -129,13 +127,11 @@ class DetectionService : Service() {
     }
 
     /**
-     * 广播状态变化
+     * 通知状态变化（使用 ViewModel）
      */
-    private fun broadcastStatus(running: Boolean) {
-        val intent = Intent(ACTION_DETECTION_STATUS_CHANGED).apply {
-            putExtra("running", running)
-        }
-        localBroadcastManager.sendBroadcast(intent)
+    private fun notifyStatusChanged(running: Boolean) {
+        // 通过 ViewModel 更新状态
+        AdDetectionService.statusViewModel?.setServiceRunning(running)
     }
 
     /**
@@ -156,4 +152,3 @@ class DetectionService : Service() {
         notificationManager.notify(NotificationHelper.getNotificationId(), notification)
     }
 }
-

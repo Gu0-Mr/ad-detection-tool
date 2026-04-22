@@ -27,6 +27,7 @@ class PreferencesManager private constructor(context: Context) {
         private const val KEY_TOTAL_COUNT = "total_count"
         private const val KEY_TODAY_COUNT = "today_count"
         private const val KEY_LAST_DATE = "last_date"
+        private const val KEY_BATTERY_OPTIMIZATION_SHOWN = "battery_optimization_shown"
         
         @Volatile
         private var instance: PreferencesManager? = null

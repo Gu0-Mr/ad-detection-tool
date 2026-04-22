@@ -199,7 +199,7 @@ class AdDetectorSimple(private val prefs: PreferencesManager) {
             log("【超时】广告流程超过${AD_TIMEOUT/1000}秒，强制重置")
             failCount++
             loopCount = 0
-            adStartTime = 0
+            adStartTime = 0L
             currentState = AdState.IDLE
             if (failCount >= MAX_FAIL_COUNT) {
                 pause()
@@ -245,7 +245,7 @@ class AdDetectorSimple(private val prefs: PreferencesManager) {
         node.getBoundsInScreen(bounds)
         
         if (!isInScreen(bounds, screen)) {
-            return scanChildren(node, screen, ::detectClaimTimeButton)
+            return scanChildren(node, screen) { child, area -> detectClaimTimeButton(child, area) }
         }
         
         val text = node.text?.toString()?.trim() ?: ""
@@ -288,7 +288,7 @@ class AdDetectorSimple(private val prefs: PreferencesManager) {
             }
         }
         
-        return scanChildren(node, screen, ::detectClaimTimeButton)
+        return scanChildren(node, screen) { child, area -> detectClaimTimeButton(child, area) }
     }
 
     // ========== 策略2：检测领取成功 + 关闭 ==========
@@ -301,7 +301,7 @@ class AdDetectorSimple(private val prefs: PreferencesManager) {
         node.getBoundsInScreen(bounds)
         
         if (!area.contains(bounds)) {
-            return scanChildren(node, area, ::detectRewardSuccessAndClose)
+            return scanChildren(node, area) { child, rect -> detectRewardSuccessAndClose(child, rect) }
         }
         
         val text = node.text?.toString()?.trim() ?: ""
@@ -341,7 +341,7 @@ class AdDetectorSimple(private val prefs: PreferencesManager) {
             return DetectionResult(AdState.AD_CLOSING, Action.CLICK_CLOSE, fullText, targetNode = node)
         }
         
-        return scanChildren(node, area, ::detectRewardSuccessAndClose)
+        return scanChildren(node, area) { child, rect -> detectRewardSuccessAndClose(child, rect) }
     }
 
     // ========== 策略3：检测领取按钮 ==========
@@ -354,7 +354,7 @@ class AdDetectorSimple(private val prefs: PreferencesManager) {
         node.getBoundsInScreen(bounds)
         
         if (!area.contains(bounds)) {
-            return scanChildren(node, area, ::detectRewardButton)
+            return scanChildren(node, area) { child, rect -> detectRewardButton(child, rect) }
         }
         
         val text = node.text?.toString()?.trim() ?: ""
@@ -382,7 +382,7 @@ class AdDetectorSimple(private val prefs: PreferencesManager) {
             }
         }
         
-        return scanChildren(node, area, ::detectRewardButton)
+        return scanChildren(node, area) { child, rect -> detectRewardButton(child, rect) }
     }
 
     // ========== 策略4：检测倒计时 ==========
@@ -395,7 +395,7 @@ class AdDetectorSimple(private val prefs: PreferencesManager) {
         node.getBoundsInScreen(bounds)
         
         if (!area.contains(bounds)) {
-            return scanChildren(node, area, ::detectCountdown)
+            return scanChildren(node, area) { child, rect -> detectCountdown(child, rect) }
         }
         
         val text = node.text?.toString()?.trim() ?: ""
@@ -414,7 +414,7 @@ class AdDetectorSimple(private val prefs: PreferencesManager) {
             return DetectionResult(AdState.AD_COUNTDOWN, Action.WAIT, "倒计时中", targetNode = node)
         }
         
-        return scanChildren(node, area, ::detectCountdown)
+        return scanChildren(node, area) { child, rect -> detectCountdown(child, rect) }
     }
 
     // ========== 策略5：检测弹窗 ==========
@@ -427,7 +427,7 @@ class AdDetectorSimple(private val prefs: PreferencesManager) {
         node.getBoundsInScreen(bounds)
         
         if (!isInScreen(bounds, screen)) {
-            return scanChildren(node, screen, ::detectPopup)
+            return scanChildren(node, screen) { child, area -> detectPopup(child, area) }
         }
         
         val text = node.text?.toString()?.trim() ?: ""
@@ -452,7 +452,7 @@ class AdDetectorSimple(private val prefs: PreferencesManager) {
             }
         }
         
-        return scanChildren(node, screen, ::detectPopup)
+        return scanChildren(node, screen) { child, area -> detectPopup(child, area) }
     }
 
     // ========== 执行点击 ==========
@@ -523,7 +523,7 @@ class AdDetectorSimple(private val prefs: PreferencesManager) {
             }
         }
         
-        return scanChildren(node, area, ::findCloseButton)
+        return scanChildren(node, area) { child, rect -> findCloseButton(child, rect) }
     }
     
     private fun findClickableParent(node: AccessibilityNodeInfo): AccessibilityNodeInfo? {

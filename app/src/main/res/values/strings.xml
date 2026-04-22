@@ -91,6 +91,21 @@
     <string name="dialog_cancel">取消</string>
     <string name="dialog_about_title">关于 - 广告自动助手</string>
 
+    <!-- 电池优化 -->
+    <string name="battery_optimization_title">电池优化提示</string>
+    <string name="battery_optimization_message">为了确保广告检测服务能够持续稳定运行，建议您将本应用添加到电池优化白名单中。
+
+这样可以：
+• 防止后台被系统强制关闭
+• 确保服务24小时持续运行
+• 避免错过任何广告检测任务
+
+是否立即设置？</string>
+    <string name="battery_optimization_yes">立即设置</string>
+    <string name="battery_optimization_no">不，暂不需要</string>
+    <string name="battery_optimization_later">稍后提醒</string>
+    <string name="battery_optimization_not_supported">您的设备不支持此功能</string>
+
     <!-- 空状态 -->
     <string name="empty_app_list">暂无应用</string>
 

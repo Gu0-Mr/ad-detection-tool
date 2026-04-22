@@ -1,15 +1,14 @@
 package com.accessibility.adx.service
 
-import android.animation.ObjectAnimator
 import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.PendingIntent
 import android.app.Service
-import android.content.Context
 import android.content.Intent
 import android.graphics.PixelFormat
 import android.os.Build
-import android.os.IBinder
+import android.os.Handler
+import android.os.Looper
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -17,16 +16,13 @@ import android.view.View
 import android.view.WindowManager
 import android.widget.ImageButton
 import android.widget.TextView
-import android.widget.ViewAnimator
 import androidx.core.app.NotificationCompat
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.accessibility.adx.AdXApplication
 import com.accessibility.adx.PreferencesManager
 import com.accessibility.adx.R
 import com.accessibility.adx.ui.MainActivity
 import com.accessibility.adx.util.NotificationHelper
-import com.accessibility.adx.Constants.ACTION_AD_DETECTED
-import com.accessibility.adx.Constants.ACTION_DETECTION_STATUS_CHANGED
+import com.accessibility.adx.viewmodel.ServiceStatusViewModel
 
 /**
  * 悬浮窗服务
@@ -47,6 +43,9 @@ class FloatWindowService : Service() {
         // 拖动相关
         private const val HANDLE_MODE_NONE = 0
         private const val HANDLE_MODE_DRAG = 1
+        
+        // 刷新间隔
+        private const val REFRESH_INTERVAL = 1000L
         
         @Volatile
         var isShowing = false
@@ -81,14 +80,22 @@ class FloatWindowService : Service() {
     private var btnSound: ImageButton? = null
     private var btnClose: ImageButton? = null
     private var viewIndicator: View? = null
+    
+    // Handler for periodic updates
+    private val handler = Handler(Looper.getMainLooper())
+    private val refreshRunnable = object : Runnable {
+        override fun run() {
+            if (isShowing) {
+                updateUI()
+                handler.postDelayed(this, REFRESH_INTERVAL)
+            }
+        }
+    }
 
     override fun onCreate() {
         super.onCreate()
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         prefs = PreferencesManager.getInstance(this)
-        
-        // 注册广播接收器
-        registerReceiver()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -106,8 +113,8 @@ class FloatWindowService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        handler.removeCallbacks(refreshRunnable)
         hideFloatWindow()
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastReceiver)
     }
 
     /**
@@ -165,6 +172,9 @@ class FloatWindowService : Service() {
             windowManager.addView(floatView, layoutParams)
             
             isShowing = true
+            
+            // 开始定期刷新
+            handler.post(refreshRunnable)
             
             // 更新UI状态
             updateUI()
@@ -381,64 +391,4 @@ class FloatWindowService : Service() {
         updateStatus()
         updateIndicator()
     }
-
-    // ==================== 广播接收器 ====================
-    
-    private val broadcastReceiver = object : android.content.BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            when (intent?.action) {
-                ACTION_AD_DETECTED -> {
-                    refreshCount()
-                }
-                ACTION_DETECTION_STATUS_CHANGED -> {
-                    refreshStatus()
-                }
-            }
-        }
-    }
-
-    private fun registerReceiver() {
-        val manager = LocalBroadcastManager.getInstance(this)
-        manager.registerReceiver(
-            broadcastReceiver,
-            android.content.IntentFilter(ACTION_AD_DETECTED)
-        )
-        manager.registerReceiver(
-            broadcastReceiver,
-            android.content.IntentFilter(ACTION_DETECTION_STATUS_CHANGED)
-        )
-    }
 }
-
-// 扩展：偏好设置的位置保存
-private var PreferencesManager.x: Int
-    get() = try {
-        val field = javaClass.getDeclaredField("prefs")
-        field.isAccessible = true
-        val prefs = field.get(this) as android.content.SharedPreferences
-        prefs.getInt("float_x", FloatWindowService.DEFAULT_X)
-    } catch (e: Exception) { FloatWindowService.DEFAULT_X }
-    set(value) {
-        try {
-            val field = javaClass.getDeclaredField("prefs")
-            field.isAccessible = true
-            val prefs = field.get(this) as android.content.SharedPreferences
-            prefs.edit().putInt("float_x", value).apply()
-        } catch (e: Exception) { }
-    }
-
-private var PreferencesManager.y: Int
-    get() = try {
-        val field = javaClass.getDeclaredField("prefs")
-        field.isAccessible = true
-        val prefs = field.get(this) as android.content.SharedPreferences
-        prefs.getInt("float_y", FloatWindowService.DEFAULT_Y)
-    } catch (e: Exception) { FloatWindowService.DEFAULT_Y }
-    set(value) {
-        try {
-            val field = javaClass.getDeclaredField("prefs")
-            field.isAccessible = true
-            val prefs = field.get(this) as android.content.SharedPreferences
-            prefs.edit().putInt("float_y", value).apply()
-        } catch (e: Exception) { }
-    }

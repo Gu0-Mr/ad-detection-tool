@@ -69,6 +69,8 @@
     <string name="notification_content_loop">循环执行中 (第%1$d次)</string>
 
     <!-- 提示信息 -->
+    <string name="tip_grant_accessibility">请先开启无障碍服务权限</string>
+    <string name="tip_grant_float_window">请先开启悬浮窗权限</string>
     <string name="tip_stats_cleared">统计数据已清除</string>
     <string name="tip_service_started">服务已启动</string>
     <string name="tip_service_stopped">服务已停止</string>
